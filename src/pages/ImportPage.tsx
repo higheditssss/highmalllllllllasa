@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { parseMALExport } from '@/lib/mal-import';
-import { getAnimeList, saveAnimeList } from '@/lib/anime-storage';
+import { addAnimeToList } from '@/lib/anime-storage';
 import { AnimeListEntry, WatchStatus, Anime } from '@/types/anime';
 import { Upload, FileUp, CheckCircle, User } from 'lucide-react';
 import { toast } from 'sonner';
@@ -60,22 +60,12 @@ async function fetchMALUserList(username: string): Promise<AnimeListEntry[]> {
   return allEntries;
 }
 
-function mergeAndSave(entries: AnimeListEntry[]): number {
-  const existing = getAnimeList();
-  const existingMap = new Map(existing.map(e => [e.anime.mal_id, e]));
+async function importEntries(entries: AnimeListEntry[]): Promise<number> {
   let count = 0;
   for (const entry of entries) {
-    if (existingMap.has(entry.anime.mal_id)) {
-      // Update existing entry with fresh data (images, etc.)
-      const ex = existingMap.get(entry.anime.mal_id)!;
-      ex.anime.images = entry.anime.images;
-      ex.anime.title_english = entry.anime.title_english || ex.anime.title_english;
-    } else {
-      existingMap.set(entry.anime.mal_id, entry);
-      count++;
-    }
+    await addAnimeToList(entry.anime, entry.status);
+    count++;
   }
-  saveAnimeList(Array.from(existingMap.values()));
   return count;
 }
 
@@ -97,7 +87,7 @@ export default function ImportPage() {
         setImporting(false);
         return;
       }
-      const count = mergeAndSave(entries);
+      const count = await importEntries(entries);
       setResult({ count });
       toast.success(`${count} anime importate cu succes!`);
     } catch {
@@ -118,7 +108,7 @@ export default function ImportPage() {
         setImporting(false);
         return;
       }
-      const count = mergeAndSave(entries);
+      const count = await importEntries(entries);
       setResult({ count });
       toast.success(`${count} anime importate de la ${username}!`);
     } catch (err: any) {
@@ -146,25 +136,14 @@ export default function ImportPage() {
           <h1 className="font-display text-2xl font-bold">Import din MAL</h1>
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => { setTab('username'); setResult(null); }}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              tab === 'username' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
-            }`}
-          >
-            <User className="h-4 w-4 inline mr-1.5" />
-            Cu numele
+          <button onClick={() => { setTab('username'); setResult(null); }}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${tab === 'username' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'}`}>
+            <User className="h-4 w-4 inline mr-1.5" />Cu numele
           </button>
-          <button
-            onClick={() => { setTab('file'); setResult(null); }}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              tab === 'file' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
-            }`}
-          >
-            <FileUp className="h-4 w-4 inline mr-1.5" />
-            Fișier XML
+          <button onClick={() => { setTab('file'); setResult(null); }}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${tab === 'file' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'}`}>
+            <FileUp className="h-4 w-4 inline mr-1.5" />Fișier XML
           </button>
         </div>
 
@@ -173,36 +152,23 @@ export default function ImportPage() {
             <div className="glass-card p-6 mb-6">
               <h2 className="font-semibold mb-2">Import rapid cu numele de utilizator</h2>
               <p className="text-sm text-muted-foreground">
-                Introdu numele tău de utilizator de pe MyAnimeList și lista ta va fi importată automat.
-                Lista trebuie să fie publică.
+                Introdu numele tău de utilizator de pe MyAnimeList și lista ta va fi importată automat. Lista trebuie să fie publică.
               </p>
             </div>
-
             <form onSubmit={handleUsername} className="space-y-4">
-              <input
-                type="text"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                placeholder="Numele tău MAL (ex: Xinil)"
-                disabled={importing}
-                className="w-full px-4 py-3 rounded-xl bg-secondary border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-              />
-              <button
-                type="submit"
-                disabled={importing || !username.trim()}
-                className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 disabled:opacity-50 transition-all"
-              >
+              <input type="text" value={username} onChange={e => setUsername(e.target.value)}
+                placeholder="Numele tău MAL (ex: Xinil)" disabled={importing}
+                className="w-full px-4 py-3 rounded-xl bg-secondary border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+              <button type="submit" disabled={importing || !username.trim()}
+                className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 disabled:opacity-50 transition-all">
                 {importing ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
                     Se importă...
                   </span>
-                ) : (
-                  'Importă lista'
-                )}
+                ) : 'Importă lista'}
               </button>
             </form>
-
             {result && !importing && (
               <div className="mt-6 glass-card p-6 text-center animate-fade-in">
                 <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-2" />
@@ -234,13 +200,8 @@ export default function ImportPage() {
                 </li>
               </ol>
             </div>
-
-            <div
-              onDrop={handleDrop}
-              onDragOver={e => e.preventDefault()}
-              onClick={() => fileRef.current?.click()}
-              className="glass-card p-12 border-2 border-dashed border-border hover:border-primary/50 cursor-pointer transition-all text-center group"
-            >
+            <div onDrop={handleDrop} onDragOver={e => e.preventDefault()} onClick={() => fileRef.current?.click()}
+              className="glass-card p-12 border-2 border-dashed border-border hover:border-primary/50 cursor-pointer transition-all text-center group">
               <input ref={fileRef} type="file" accept=".xml,.gz" onChange={handleChange} className="hidden" />
               {importing ? (
                 <div className="flex flex-col items-center gap-3">
