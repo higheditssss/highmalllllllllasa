@@ -17,11 +17,11 @@ const STATUS_ICONS: Record<WatchStatus, React.ReactNode> = {
 };
 
 const STATUS_ACCENT: Record<WatchStatus, string> = {
-  watching: 'text-blue-400',
-  completed: 'text-emerald-400',
-  plan_to_watch: 'text-slate-300',
-  on_hold: 'text-amber-400',
-  dropped: 'text-red-400',
+  watching: 'text-foreground/70',
+  completed: 'text-foreground/70',
+  plan_to_watch: 'text-foreground/70',
+  on_hold: 'text-foreground/70',
+  dropped: 'text-foreground/70',
 };
 
 export default function UserProfilePage() {
@@ -39,15 +39,13 @@ export default function UserProfilePage() {
     async function load() {
       setLoading(true);
       if (!username) return;
-
-      const [entries, profile, currentProfile] = await Promise.all([
+      const [entries, profileRes, currentProfile] = await Promise.all([
         getAnimeListForUser(username),
         supabase.from('profiles').select('avatar_url').eq('username', username).single(),
         getCurrentProfile(),
       ]);
-
       setList(entries);
-      setAvatarUrl(profile.data?.avatar_url || null);
+      setAvatarUrl(profileRes.data?.avatar_url || null);
       setIsOwnProfile(currentProfile?.username === username);
       setLoading(false);
     }
@@ -80,11 +78,9 @@ export default function UserProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) { toast.error('Imaginea trebuie să fie sub 2MB'); return; }
-
     setUploadingAvatar(true);
     const url = await uploadAvatar(file);
     setUploadingAvatar(false);
-
     if (url) {
       setAvatarUrl(url + '?t=' + Date.now());
       toast.success('Poza de profil actualizată!');
@@ -94,32 +90,27 @@ export default function UserProfilePage() {
   };
 
   return (
-    <div className="min-h-screen pb-24 md:pb-8 md:pt-16">
-      <div className="h-40 md:h-52 bg-gradient-to-b from-[#1a1f35] to-[#0d1117] relative">
-        <div className="absolute inset-0 opacity-20"
-          style={{ backgroundImage: 'radial-gradient(ellipse at 60% 50%, #2a3a6e 0%, transparent 70%)' }} />
+    <div className="min-h-screen pb-24 md:pb-8 md:pt-16 bg-background">
+      {/* Banner */}
+      <div className="h-36 md:h-48 bg-secondary relative overflow-hidden">
+        <div className="absolute inset-0 opacity-30"
+          style={{ backgroundImage: 'radial-gradient(ellipse at 60% 50%, hsl(var(--primary)) 0%, transparent 70%)' }} />
       </div>
 
       <div className="container px-4">
-        <div className="flex items-end gap-5 -mt-14 mb-6">
-          {/* Avatar cu upload */}
+        {/* Profile header */}
+        <div className="flex items-end gap-5 -mt-12 mb-6">
           <div className="relative flex-shrink-0">
-            <div className="w-24 h-24 md:w-28 md:h-28 rounded-xl border-4 border-[#0d1117] bg-[#1a1f35] flex items-center justify-center overflow-hidden">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-4xl font-bold text-slate-400 select-none">
-                  {username?.charAt(0).toUpperCase() || '?'}
-                </span>
-              )}
+            <div className="w-24 h-24 rounded-xl border-4 border-background bg-card flex items-center justify-center overflow-hidden">
+              {avatarUrl
+                ? <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
+                : <span className="text-4xl font-bold text-muted-foreground select-none">{username?.charAt(0).toUpperCase() || '?'}</span>
+              }
             </div>
             {isOwnProfile && (
               <>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingAvatar}
-                  className="absolute -bottom-1 -right-1 p-1.5 rounded-lg bg-[#1e2438] border border-[#2a3050] text-slate-300 hover:bg-[#252b42] transition-colors"
-                >
+                <button onClick={() => fileInputRef.current?.click()} disabled={uploadingAvatar}
+                  className="absolute -bottom-1 -right-1 p-1.5 rounded-lg bg-card border border-border text-muted-foreground hover:text-foreground transition-colors">
                   <Camera className="h-3.5 w-3.5" />
                 </button>
                 <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
@@ -134,17 +125,17 @@ export default function UserProfilePage() {
 
           <div className="pb-2 flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-white truncate">{username}</h1>
+              <h1 className="text-2xl font-bold truncate">{username}</h1>
               {isOwnProfile && (
-                <span className="text-xs bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full">Tu</span>
+                <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full">Tu</span>
               )}
             </div>
-            <p className="text-sm text-slate-400 mt-0.5">Profil public HIGHMAL</p>
+            <p className="text-sm text-muted-foreground mt-0.5">Profil public HIGHMAL</p>
           </div>
 
           <button onClick={handleCopyLink}
-            className="pb-2 flex items-center gap-2 px-4 py-2 rounded-lg bg-[#1e2438] border border-[#2a3050] text-sm text-slate-300 hover:bg-[#252b42] transition-colors flex-shrink-0">
-            {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+            className="pb-2 flex items-center gap-2 px-4 py-2 rounded-lg glass-card text-sm text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
+            {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
             <span className="hidden sm:inline">{copied ? 'Copiat!' : 'Copiază link'}</span>
           </button>
         </div>
@@ -158,53 +149,54 @@ export default function UserProfilePage() {
             { label: 'Score mediu', value: avgScore },
             { label: 'Abandonat', value: counts['dropped'] || 0 },
           ].map(stat => (
-            <div key={stat.label} className="bg-[#1a1f35] border border-[#2a3050] rounded-xl p-3 text-center">
-              <div className="text-xl font-bold text-white">{loading ? '—' : stat.value}</div>
-              <div className="text-xs text-slate-400 mt-0.5">{stat.label}</div>
+            <div key={stat.label} className="glass-card p-3 text-center">
+              <div className="text-xl font-bold">{loading ? '—' : stat.value}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">{stat.label}</div>
             </div>
           ))}
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-[#2a3050] mb-6">
+        <div className="border-b border-border mb-6">
           <div className="flex gap-1 overflow-x-auto scrollbar-none">
             {tabs.map(tab => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                 className={cn('flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors',
-                  activeTab === tab.key ? 'border-blue-400 text-blue-400' : 'border-transparent text-slate-400 hover:text-slate-200')}>
+                  activeTab === tab.key ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}>
                 {tab.icon}
                 {tab.label}
-                {counts[tab.key] ? <span className="text-xs text-slate-500 ml-0.5">({counts[tab.key]})</span> : null}
+                {counts[tab.key] ? <span className="text-xs text-muted-foreground ml-0.5">({counts[tab.key]})</span> : null}
               </button>
             ))}
           </div>
         </div>
 
+        {/* List */}
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-20 bg-[#1a1f35] rounded-xl animate-pulse" />
+              <div key={i} className="h-20 glass-card animate-pulse" />
             ))}
           </div>
         ) : list.length === 0 ? (
-          <div className="text-center py-20 text-slate-500">
+          <div className="text-center py-20 text-muted-foreground">
             <Tv className="h-12 w-12 mx-auto mb-4 opacity-20" />
             <p>{isOwnProfile ? 'Lista ta este goală' : `${username} nu are anime în listă`}</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-20 text-slate-500">
+          <div className="text-center py-20 text-muted-foreground">
             <p>Niciun anime în această categorie</p>
           </div>
         ) : (
           <div className="space-y-2">
             {filtered.map((entry, i) => (
               <Link key={entry.anime.mal_id} to={`/anime/${entry.anime.mal_id}`}
-                className="flex items-center gap-4 bg-[#1a1f35] hover:bg-[#1e2540] border border-[#2a3050] rounded-xl p-3 transition-colors group">
-                <span className="text-xs text-slate-600 w-5 text-right flex-shrink-0">{i + 1}</span>
+                className="flex items-center gap-4 glass-card hover:bg-card/80 p-3 transition-colors group">
+                <span className="text-xs text-muted-foreground w-5 text-right flex-shrink-0">{i + 1}</span>
                 <img src={entry.anime.images.jpg.image_url} alt={entry.anime.title}
                   className="w-10 h-14 rounded-lg object-cover flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate group-hover:text-blue-300 transition-colors">
+                  <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
                     {entry.anime.title_english || entry.anime.title}
                   </p>
                   <div className={cn('flex items-center gap-1 mt-1 text-xs', STATUS_ACCENT[entry.status])}>
@@ -213,8 +205,8 @@ export default function UserProfilePage() {
                   </div>
                 </div>
                 {entry.score > 0 && (
-                  <div className="flex items-center gap-1 text-sm font-semibold text-slate-300 flex-shrink-0">
-                    <Star className="h-3.5 w-3.5 text-slate-400 fill-slate-400" />
+                  <div className="flex items-center gap-1 text-sm font-semibold text-muted-foreground flex-shrink-0">
+                    <Star className="h-3.5 w-3.5 fill-muted-foreground" />
                     {entry.score}
                   </div>
                 )}
