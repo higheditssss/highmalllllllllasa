@@ -1,18 +1,52 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCurrentProfile, uploadAvatar, uploadBanner, updateProfile } from '@/lib/auth';
-import { Camera, User, Image, Save, ArrowLeft, Info } from 'lucide-react';
+import { Camera, User, Image, Save, ArrowLeft, Info, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/lib/supabase';
 
-// ─── Constante dimensiuni ───────────────────────────────────────────────────
 const AVATAR_MAX_MB = 2;
 const BANNER_MAX_MB = 5;
 const AVATAR_MAX_BYTES = AVATAR_MAX_MB * 1024 * 1024;
 const BANNER_MAX_BYTES = BANNER_MAX_MB * 1024 * 1024;
-// Dimensiuni recomandate (informative, nu restricție hard)
 const AVATAR_RECOMMENDED = '400×400 px';
 const BANNER_RECOMMENDED = '1200×300 px';
+
+const HAT_TESTERS = ['highedits', 'ovi'];
+
+const HATS = [
+  { id: 'none', label: 'Niciunul', preview: null },
+  {
+    id: 'luffy',
+    label: 'Pălărie de paie',
+    preview: (
+      <svg viewBox="0 0 280 130" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+        <ellipse cx="148" cy="114" rx="126" ry="26" fill="#b8924a" opacity="0.4"/>
+        <ellipse cx="140" cy="112" rx="128" ry="26" fill="#e8b84b" stroke="#c08830" strokeWidth="2"/>
+        <line x1="30" y1="110" x2="50" y2="105" stroke="#c08830" strokeWidth="0.8" strokeLinecap="round" opacity="0.6"/>
+        <line x1="55" y1="106" x2="72" y2="102" stroke="#c08830" strokeWidth="0.8" strokeLinecap="round" opacity="0.6"/>
+        <line x1="200" y1="106" x2="218" y2="102" stroke="#c08830" strokeWidth="0.8" strokeLinecap="round" opacity="0.6"/>
+        <line x1="228" y1="108" x2="248" y2="106" stroke="#c08830" strokeWidth="0.8" strokeLinecap="round" opacity="0.6"/>
+        <ellipse cx="140" cy="75" rx="68" ry="10" fill="#e8b84b"/>
+        <path d="M72,75 C72,38 208,38 208,75" fill="#e8b84b" stroke="#c08830" strokeWidth="2"/>
+        <ellipse cx="140" cy="75" rx="68" ry="10" fill="#e8b84b" stroke="#c08830" strokeWidth="1.5"/>
+        <path d="M175,42 C195,50 208,62 208,75 L190,75 C190,62 180,50 165,44Z" fill="#c08830" opacity="0.3"/>
+        <line x1="118" y1="42" x2="122" y2="65" stroke="#c08830" strokeWidth="0.9" strokeLinecap="round" opacity="0.5"/>
+        <line x1="133" y1="38" x2="135" y2="63" stroke="#c08830" strokeWidth="0.9" strokeLinecap="round" opacity="0.5"/>
+        <line x1="148" y1="38" x2="146" y2="63" stroke="#c08830" strokeWidth="0.9" strokeLinecap="round" opacity="0.5"/>
+        <line x1="162" y1="41" x2="158" y2="64" stroke="#c08830" strokeWidth="0.9" strokeLinecap="round" opacity="0.5"/>
+        <line x1="175" y1="47" x2="169" y2="67" stroke="#c08830" strokeWidth="0.9" strokeLinecap="round" opacity="0.4"/>
+        <line x1="105" y1="48" x2="111" y2="67" stroke="#c08830" strokeWidth="0.9" strokeLinecap="round" opacity="0.4"/>
+        <path d="M72,80 Q140,70 208,80 Q208,98 140,100 Q72,98 72,80Z" fill="#cc1111" stroke="#880000" strokeWidth="1.5"/>
+        <path d="M72,80 Q140,72 208,80 Q140,76 72,80Z" fill="#ee2222" opacity="0.5"/>
+        <path d="M72,80 L58,74 L62,84 L72,88Z" fill="#bb0000" stroke="#880000" strokeWidth="1"/>
+        <path d="M72,80 L56,90 L62,96 L72,90Z" fill="#aa0000" stroke="#880000" strokeWidth="1"/>
+        <path d="M72,88 Q140,100 208,88" fill="none" stroke="#c08830" strokeWidth="1.5"/>
+      </svg>
+    ),
+  },
+];
 
 export default function ProfileSettingsPage() {
   const navigate = useNavigate();
@@ -25,111 +59,82 @@ export default function ProfileSettingsPage() {
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [uploadingBanner, setUploadingBanner] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [selectedHat, setSelectedHat] = useState<string>('none');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
+  const isHatTester = HAT_TESTERS.includes(username);
+
   useEffect(() => {
     async function loadProfile() {
       const profile = await getCurrentProfile();
-      if (!profile) {
-        navigate('/login');
-        return;
-      }
+      if (!profile) { navigate('/login'); return; }
       setUsername(profile.username || '');
       setBio(profile.bio || '');
       setAvatarUrl(profile.avatar_url || null);
       setBannerUrl(profile.banner_url || null);
+      setSelectedHat(profile.hat || 'none');
       setLoading(false);
     }
     loadProfile();
   }, [navigate]);
 
-  // ─── Avatar ────────────────────────────────────────────────────────────────
   const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > AVATAR_MAX_BYTES) {
-      toast.error(`Poza de profil trebuie să fie sub ${AVATAR_MAX_MB} MB`);
-      return;
-    }
+    if (file.size > AVATAR_MAX_BYTES) { toast.error(`Poza de profil trebuie să fie sub ${AVATAR_MAX_MB} MB`); return; }
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
   };
 
-  // ─── Banner ────────────────────────────────────────────────────────────────
   const handleBannerSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > BANNER_MAX_BYTES) {
-      toast.error(`Bannerul trebuie să fie sub ${BANNER_MAX_MB} MB`);
-      return;
-    }
+    if (file.size > BANNER_MAX_BYTES) { toast.error(`Bannerul trebuie să fie sub ${BANNER_MAX_MB} MB`); return; }
     setBannerFile(file);
     setBannerPreview(URL.createObjectURL(file));
   };
 
-  // ─── Salvare ───────────────────────────────────────────────────────────────
   const handleSave = async () => {
     setSaving(true);
-    let newAvatarUrl = avatarUrl;
-    let newBannerUrl = bannerUrl;
 
-    // Upload avatar dacă s-a selectat
     if (avatarFile) {
       setUploadingAvatar(true);
       const url = await uploadAvatar(avatarFile);
       setUploadingAvatar(false);
-      if (url) {
-        newAvatarUrl = url + '?t=' + Date.now();
-        setAvatarUrl(newAvatarUrl);
-        setAvatarFile(null);
-        toast.success('Poza de profil actualizată!');
-      } else {
-        toast.error('Eroare la upload avatar');
-      }
+      if (url) { setAvatarUrl(url + '?t=' + Date.now()); setAvatarFile(null); toast.success('Poza de profil actualizată!'); }
+      else toast.error('Eroare la upload avatar');
     }
 
-    // Upload banner dacă s-a selectat
     if (bannerFile) {
       setUploadingBanner(true);
       const url = await uploadBanner(bannerFile);
       setUploadingBanner(false);
-      if (url) {
-        newBannerUrl = url + '?t=' + Date.now();
-        setBannerUrl(newBannerUrl);
-        setBannerFile(null);
-        toast.success('Banner actualizat!');
-      } else {
-        toast.error('Eroare la upload banner');
-      }
+      if (url) { setBannerUrl(url + '?t=' + Date.now()); setBannerFile(null); toast.success('Banner actualizat!'); }
+      else toast.error('Eroare la upload banner');
     }
 
-    // Salvează bio
-    const result = await updateProfile({ bio });
-    if (result.success) {
-      toast.success('Profilul a fost salvat!');
-    } else {
-      toast.error(result.error || 'Eroare la salvare');
-    }
+    const result = await updateProfile({ bio, hat: selectedHat } as any);
+    if (result.success) toast.success('Profilul a fost salvat!');
+    else toast.error(result.error || 'Eroare la salvare');
 
     setSaving(false);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
   const avatarSrc = avatarPreview || avatarUrl;
   const bannerSrc = bannerPreview || bannerUrl;
+  const activeHat = HATS.find(h => h.id === selectedHat);
 
   return (
     <div className="min-h-screen pb-24 md:pb-12 md:pt-20 bg-background">
@@ -137,10 +142,8 @@ export default function ProfileSettingsPage() {
 
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
-          <button
-            onClick={() => navigate(`/user/${username}`)}
-            className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
-          >
+          <button onClick={() => navigate(`/user/${username}`)}
+            className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div>
@@ -149,40 +152,36 @@ export default function ProfileSettingsPage() {
           </div>
         </div>
 
-        {/* ── PREVIZUALIZARE BANNER + AVATAR ─────────────────────────────── */}
+        {/* Previzualizare */}
         <div className="glass-card rounded-2xl overflow-hidden mb-6">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 pt-4 pb-2">
             Previzualizare profil
           </p>
-
-          {/* Banner preview */}
           <div className="relative h-28 bg-secondary group cursor-pointer" onClick={() => bannerInputRef.current?.click()}>
             {bannerSrc
               ? <img src={bannerSrc} alt="banner" className="w-full h-full object-cover" />
-              : <div className="absolute inset-0 opacity-30"
-                  style={{ backgroundImage: 'radial-gradient(ellipse at 60% 50%, hsl(var(--primary)) 0%, transparent 70%)' }} />
+              : <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(ellipse at 60% 50%, hsl(var(--primary)) 0%, transparent 70%)' }} />
             }
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
               <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 bg-black/60 text-white text-xs px-3 py-1.5 rounded-lg">
-                <Camera className="h-3.5 w-3.5" />
-                Schimbă bannerul
+                <Camera className="h-3.5 w-3.5" /> Schimbă bannerul
               </div>
             </div>
           </div>
-
-          {/* Avatar preview (overlapping banner) */}
           <div className="px-5 pb-4">
             <div className="relative -mt-8 mb-3 w-16 h-16">
-              <div
-                className="w-16 h-16 rounded-xl bg-card overflow-hidden ring-4 ring-background shadow-lg cursor-pointer group"
-                onClick={() => avatarInputRef.current?.click()}
-              >
+              {/* Hat preview on avatar */}
+              {activeHat && activeHat.id !== 'none' && (
+                <div className="absolute pointer-events-none z-20" style={{ top: '-28px', left: '-14px', width: '88px', height: '50px' }}>
+                  {activeHat.preview}
+                </div>
+              )}
+              <div className="w-16 h-16 rounded-xl bg-card overflow-hidden ring-4 ring-background shadow-lg cursor-pointer group relative z-10"
+                onClick={() => avatarInputRef.current?.click()}>
                 {avatarSrc
                   ? <img src={avatarSrc} alt={username} className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex items-center justify-center bg-secondary">
-                      <span className="text-2xl font-bold text-muted-foreground select-none">
-                        {username?.charAt(0).toUpperCase() || '?'}
-                      </span>
+                      <span className="text-2xl font-bold text-muted-foreground select-none">{username?.charAt(0).toUpperCase() || '?'}</span>
                     </div>
                 }
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors rounded-xl flex items-center justify-center">
@@ -195,37 +194,83 @@ export default function ProfileSettingsPage() {
           </div>
         </div>
 
-        {/* ── SECȚIUNEA: POZĂ DE PROFIL ──────────────────────────────────── */}
+        {/* Accesorii avatar — doar pentru hat testers */}
+        {isHatTester && (
+          <div className="glass-card rounded-2xl p-5 mb-4">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-primary"><Sparkles className="h-4 w-4" /></span>
+              <h2 className="text-sm font-semibold">Accesorii avatar</h2>
+              <span className="ml-auto text-xs px-2 py-0.5 rounded-full font-semibold"
+                style={{ background: 'linear-gradient(135deg,#ffd700,#ff8c00)', color: '#1a0a00' }}>
+                👑 Exclusiv
+              </span>
+            </div>
+
+            {/* Tabel orizontal pălării */}
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+              {HATS.map(hat => (
+                <button
+                  key={hat.id}
+                  onClick={() => setSelectedHat(hat.id)}
+                  className={cn(
+                    'flex-shrink-0 flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all',
+                    selectedHat === hat.id
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border bg-secondary/50 hover:border-primary/50'
+                  )}
+                  style={{ minWidth: '90px' }}
+                >
+                  {/* Avatar preview cu pălăria */}
+                  <div className="relative w-14 h-14">
+                    {hat.id !== 'none' && (
+                      <div className="absolute pointer-events-none z-10" style={{ top: '-22px', left: '-12px', width: '76px', height: '44px' }}>
+                        {hat.preview}
+                      </div>
+                    )}
+                    <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center overflow-hidden ring-2 ring-background relative z-0">
+                      {avatarSrc
+                        ? <img src={avatarSrc} alt={username} className="w-full h-full object-cover" />
+                        : <span className="text-xl font-bold text-muted-foreground">{username?.charAt(0).toUpperCase() || '?'}</span>
+                      }
+                    </div>
+                  </div>
+
+                  <span className="text-xs font-medium text-center leading-tight">{hat.label}</span>
+
+                  {selectedHat === hat.id && (
+                    <span className="w-2 h-2 rounded-full bg-primary block" />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-3">
+              Pălăria apare deasupra avatarului tău pe profil și în lista de prieteni.
+            </p>
+          </div>
+        )}
+
+        {/* Poză de profil */}
         <Section icon={<User className="h-4 w-4" />} title="Poză de profil">
           <div className="flex flex-col gap-3">
-            <div
-              className="relative w-24 h-24 rounded-xl bg-secondary overflow-hidden cursor-pointer group ring-2 ring-border hover:ring-primary transition-all"
-              onClick={() => avatarInputRef.current?.click()}
-            >
+            <div className="relative w-24 h-24 rounded-xl bg-secondary overflow-hidden cursor-pointer group ring-2 ring-border hover:ring-primary transition-all"
+              onClick={() => avatarInputRef.current?.click()}>
               {avatarSrc
                 ? <img src={avatarSrc} alt={username} className="w-full h-full object-cover" />
                 : <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-2xl font-bold text-muted-foreground">
-                      {username?.charAt(0).toUpperCase() || '?'}
-                    </span>
+                    <span className="text-2xl font-bold text-muted-foreground">{username?.charAt(0).toUpperCase() || '?'}</span>
                   </div>
               }
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center rounded-xl">
                 <Camera className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </div>
-            <button
-              onClick={() => avatarInputRef.current?.click()}
-              className="w-fit px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-sm font-medium transition-colors flex items-center gap-2"
-            >
+            <button onClick={() => avatarInputRef.current?.click()}
+              className="w-fit px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-sm font-medium transition-colors flex items-center gap-2">
               <Camera className="h-4 w-4" />
               {avatarFile ? 'Schimbă selecția' : 'Alege poză'}
             </button>
-            {avatarFile && (
-              <p className="text-xs text-primary font-medium">
-                ✓ {avatarFile.name} ({(avatarFile.size / 1024 / 1024).toFixed(2)} MB)
-              </p>
-            )}
+            {avatarFile && <p className="text-xs text-primary font-medium">✓ {avatarFile.name} ({(avatarFile.size / 1024 / 1024).toFixed(2)} MB)</p>}
             <div className="flex flex-col gap-0.5">
               <InfoRow label="Dimensiune recomandată" value={AVATAR_RECOMMENDED} />
               <InfoRow label="Maxim" value={`${AVATAR_MAX_MB} MB`} />
@@ -235,79 +280,52 @@ export default function ProfileSettingsPage() {
           <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarSelect} />
         </Section>
 
-        {/* ── SECȚIUNEA: BANNER ─────────────────────────────────────────── */}
+        {/* Banner */}
         <Section icon={<Image className="h-4 w-4" />} title="Banner profil">
-          <div
-            className="relative h-24 rounded-xl bg-secondary overflow-hidden cursor-pointer group ring-2 ring-border hover:ring-primary transition-all mb-3"
-            onClick={() => bannerInputRef.current?.click()}
-          >
+          <div className="relative h-24 rounded-xl bg-secondary overflow-hidden cursor-pointer group ring-2 ring-border hover:ring-primary transition-all mb-3"
+            onClick={() => bannerInputRef.current?.click()}>
             {bannerSrc
               ? <img src={bannerSrc} alt="banner" className="w-full h-full object-cover" />
-              : <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-sm text-muted-foreground">Niciun banner</span>
-                </div>
+              : <div className="w-full h-full flex items-center justify-center"><span className="text-sm text-muted-foreground">Niciun banner</span></div>
             }
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
               <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 bg-black/60 text-white text-xs px-3 py-1.5 rounded-lg">
-                <Camera className="h-3.5 w-3.5" />
-                Schimbă bannerul
+                <Camera className="h-3.5 w-3.5" /> Schimbă bannerul
               </div>
             </div>
           </div>
-
-          <button
-            onClick={() => bannerInputRef.current?.click()}
-            className="px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-sm font-medium transition-colors mb-2 flex items-center gap-2"
-          >
+          <button onClick={() => bannerInputRef.current?.click()}
+            className="px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-sm font-medium transition-colors mb-2 flex items-center gap-2">
             <Camera className="h-4 w-4" />
             {bannerFile ? 'Schimbă selecția' : 'Alege banner'}
           </button>
-          {bannerFile && (
-            <p className="text-xs text-primary font-medium mb-2">
-              ✓ {bannerFile.name} ({(bannerFile.size / 1024 / 1024).toFixed(2)} MB)
-            </p>
-          )}
-
+          {bannerFile && <p className="text-xs text-primary font-medium mb-2">✓ {bannerFile.name} ({(bannerFile.size / 1024 / 1024).toFixed(2)} MB)</p>}
           <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
             <InfoRow label="Dimensiune recomandată" value={BANNER_RECOMMENDED} />
             <InfoRow label="Maxim" value={`${BANNER_MAX_MB} MB`} />
-            <InfoRow label="Raport de aspect recomandat" value="4:1" />
+            <InfoRow label="Raport de aspect" value="4:1" />
             <InfoRow label="Formate acceptate" value="JPG, PNG, WebP" />
           </div>
           <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleBannerSelect} />
         </Section>
 
-        {/* ── SECȚIUNEA: BIO ────────────────────────────────────────────── */}
+        {/* Bio */}
         <Section icon={<User className="h-4 w-4" />} title="Despre tine (bio)">
-          <textarea
-            value={bio}
-            onChange={e => setBio(e.target.value)}
-            maxLength={200}
-            rows={3}
+          <textarea value={bio} onChange={e => setBio(e.target.value)} maxLength={200} rows={3}
             placeholder="Scrie ceva despre tine..."
-            className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground/50 transition-all"
-          />
+            className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground/50 transition-all" />
           <p className="text-xs text-muted-foreground text-right mt-1">{bio.length}/200 caractere</p>
         </Section>
 
-        {/* ── BUTOANE ACȚIUNI ────────────────────────────────────────────── */}
+        {/* Butoane */}
         <div className="flex gap-3 mt-2">
-          <button
-            onClick={() => navigate(`/user/${username}`)}
-            className="flex-1 px-4 py-3 rounded-xl bg-secondary hover:bg-secondary/80 text-sm font-medium transition-colors"
-          >
+          <button onClick={() => navigate(`/user/${username}`)}
+            className="flex-1 px-4 py-3 rounded-xl bg-secondary hover:bg-secondary/80 text-sm font-medium transition-colors">
             Anulează
           </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className={cn(
-              'flex-1 px-4 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2',
-              saving
-                ? 'bg-primary/50 text-primary-foreground/50 cursor-not-allowed'
-                : 'bg-primary text-primary-foreground hover:opacity-90'
-            )}
-          >
+          <button onClick={handleSave} disabled={saving}
+            className={cn('flex-1 px-4 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2',
+              saving ? 'bg-primary/50 text-primary-foreground/50 cursor-not-allowed' : 'bg-primary text-primary-foreground hover:opacity-90')}>
             {saving
               ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Se salvează...</>
               : <><Save className="h-4 w-4" />Salvează modificările</>
@@ -319,8 +337,6 @@ export default function ProfileSettingsPage() {
     </div>
   );
 }
-
-// ─── Sub-componente ajutătoare ──────────────────────────────────────────────
 
 function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
