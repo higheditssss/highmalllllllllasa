@@ -112,7 +112,7 @@ export default function UserProfilePage() {
                 <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full">Tu</span>
               )}
             </div>
-            <p className="text-sm text-muted-foreground mt-0.5">Profil public HIGHMAL</p>
+            <p className="text-sm text-muted-foreground mt-0.5"></p>
           </div>
 
           <button onClick={handleCopyLink}
