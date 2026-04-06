@@ -3,12 +3,13 @@ import { getAnimeListForUser } from '@/lib/anime-storage';
 import { getCurrentProfile } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { AnimeListEntry, WatchStatus, STATUS_LABELS } from '@/types/anime';
-import { Star, Tv, CheckCircle, PauseCircle, XCircle, BookOpen, Copy, Check, Settings } from 'lucide-react';
-import { FriendButton } from '@/components/FriendButton';
-import { FriendsPanel } from '@/components/FriendsPanel';
+import { Star, Tv, CheckCircle, PauseCircle, XCircle, BookOpen, Copy, Check, Settings, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { FriendButton } from '@/components/FriendButton';
+import { FriendsPanel } from '@/components/FriendsPanel';
+import { AddFriendModal } from '@/components/AddFriendModal';
 
 const STATUS_ICONS: Record<WatchStatus, React.ReactNode> = {
   watching: <Tv className="h-4 w-4" />,
@@ -30,6 +31,7 @@ export default function UserProfilePage() {
   const { username } = useParams<{ username: string }>();
   const [activeTab, setActiveTab] = useState<WatchStatus | 'all'>('all');
   const [copied, setCopied] = useState(false);
+  const [showAddFriend, setShowAddFriend] = useState(false);
   const [list, setList] = useState<AnimeListEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
@@ -128,13 +130,23 @@ export default function UserProfilePage() {
             <FriendButton targetUsername={username!} />
           )}
           {isOwnProfile && (
-            <Link to="/settings/profile"
-              className="pb-1 flex items-center gap-2 px-3 py-2 rounded-lg glass-card text-sm text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 z-10">
-              <Settings className="h-4 w-4" />
-              <span className="hidden sm:inline">Setări profil</span>
-            </Link>
+            <>
+              <button
+                onClick={() => setShowAddFriend(true)}
+                className="pb-1 flex items-center gap-2 px-3 py-2 rounded-lg glass-card text-sm text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0 z-10">
+                <UserPlus className="h-4 w-4" />
+                <span className="hidden sm:inline">Adaugă prieten</span>
+              </button>
+              <Link to="/settings/profile"
+                className="pb-1 flex items-center gap-2 px-3 py-2 rounded-lg glass-card text-sm text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 z-10">
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Setări profil</span>
+              </Link>
+            </>
           )}
         </div>
+
+        {showAddFriend && <AddFriendModal onClose={() => setShowAddFriend(false)} />}
 
         {/* Friends */}
         <FriendsPanel username={username!} isOwnProfile={isOwnProfile} />
