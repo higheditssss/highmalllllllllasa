@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { getAnimeListForUser } from '@/lib/anime-storage';
-import { getCurrentProfile, uploadAvatar } from '@/lib/auth';
+import { getCurrentProfile, uploadAvatar, uploadBanner } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { AnimeListEntry, WatchStatus, STATUS_LABELS } from '@/types/anime';
 import { Star, Tv, CheckCircle, PauseCircle, XCircle, BookOpen, Copy, Check, Camera } from 'lucide-react';
@@ -32,8 +32,11 @@ export default function UserProfilePage() {
   const [loading, setLoading] = useState(true);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function load() {
@@ -41,11 +44,12 @@ export default function UserProfilePage() {
       if (!username) return;
       const [entries, profileRes, currentProfile] = await Promise.all([
         getAnimeListForUser(username),
-        supabase.from('profiles').select('avatar_url').eq('username', username).single(),
+        supabase.from('profiles').select('avatar_url, banner_url').eq('username', username).single(),
         getCurrentProfile(),
       ]);
       setList(entries);
       setAvatarUrl(profileRes.data?.avatar_url || null);
+      setBannerUrl(profileRes.data?.banner_url || null);
       setIsOwnProfile(currentProfile?.username === username);
       setLoading(false);
     }
@@ -85,28 +89,65 @@ export default function UserProfilePage() {
       setAvatarUrl(url + '?t=' + Date.now());
       toast.success('Poza de profil actualizată!');
     } else {
-      toast.error('Eroare la upload — verifică că bucket-ul "avatars" există și e public în Supabase Storage');
+      toast.error('Eroare la upload — verifică că bucket-ul "avatars" există și e public');
+    }
+  };
+
+  const handleBannerChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error('Bannerul trebuie să fie sub 5MB'); return; }
+    setUploadingBanner(true);
+    const url = await uploadBanner(file);
+    setUploadingBanner(false);
+    if (url) {
+      setBannerUrl(url + '?t=' + Date.now());
+      toast.success('Banner actualizat!');
+    } else {
+      toast.error('Eroare la upload banner');
     }
   };
 
   return (
     <div className="min-h-screen pb-24 md:pb-8 md:pt-16 bg-background">
+
       {/* Banner */}
-      <div className="h-36 md:h-48 bg-secondary relative overflow-hidden">
-        <div className="absolute inset-0 opacity-30"
-          style={{ backgroundImage: 'radial-gradient(ellipse at 60% 50%, hsl(var(--primary)) 0%, transparent 70%)' }} />
+      <div className="h-36 md:h-48 bg-secondary relative overflow-hidden group">
+        {bannerUrl
+          ? <img src={bannerUrl} alt="banner" className="w-full h-full object-cover" />
+          : <div className="absolute inset-0 opacity-30"
+              style={{ backgroundImage: 'radial-gradient(ellipse at 60% 50%, hsl(var(--primary)) 0%, transparent 70%)' }} />
+        }
+        {/* Banner upload button - only for own profile */}
+        {isOwnProfile && (
+          <>
+            <button
+              onClick={() => bannerInputRef.current?.click()}
+              disabled={uploadingBanner}
+              className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/50 backdrop-blur-sm text-white/80 hover:text-white text-xs font-medium transition-colors opacity-0 group-hover:opacity-100"
+            >
+              {uploadingBanner
+                ? <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
+                : <Camera className="h-3.5 w-3.5" />
+              }
+              Schimbă bannerul
+            </button>
+            <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleBannerChange} />
+          </>
+        )}
       </div>
 
       <div className="container px-4">
-        {/* Profile header */}
-        <div className="flex items-end gap-5 -mt-12 mb-6">
-          {/* FIX: avatar fără border care acopere poza, buton camera vizibil */}
-          <div className="relative flex-shrink-0">
-            <div className="w-24 h-24 rounded-xl bg-card shadow-lg overflow-hidden ring-4 ring-background">
+        {/* Profile header - FIX: avatar + nume nu se mai suprapun cu bannerul */}
+        <div className="flex items-end gap-5 -mt-10 mb-6">
+
+          {/* Avatar */}
+          <div className="relative flex-shrink-0 z-10">
+            <div className="w-20 h-20 md:w-24 md:h-24 rounded-xl bg-card overflow-hidden ring-4 ring-background shadow-lg">
               {avatarUrl
                 ? <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
                 : <div className="w-full h-full flex items-center justify-center bg-secondary">
-                    <span className="text-4xl font-bold text-muted-foreground select-none">
+                    <span className="text-3xl md:text-4xl font-bold text-muted-foreground select-none">
                       {username?.charAt(0).toUpperCase() || '?'}
                     </span>
                   </div>
@@ -117,23 +158,22 @@ export default function UserProfilePage() {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingAvatar}
-                  className="absolute -bottom-2 -right-2 p-2 rounded-lg bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shadow-md z-10"
+                  className="absolute -bottom-2 -right-2 p-1.5 rounded-lg bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shadow-md z-10"
                 >
-                  <Camera className="h-3.5 w-3.5" />
+                  {uploadingAvatar
+                    ? <div className="w-3.5 h-3.5 border border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
+                    : <Camera className="h-3.5 w-3.5" />
+                  }
                 </button>
                 <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
               </>
             )}
-            {uploadingAvatar && (
-              <div className="absolute inset-0 rounded-xl bg-black/60 flex items-center justify-center z-20">
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              </div>
-            )}
           </div>
 
-          <div className="pb-2 flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold truncate">{username}</h1>
+          {/* Nume + info — pe fundal semi-transparent ca să fie vizibil peste banner */}
+          <div className="flex-1 min-w-0 pb-1 z-10">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl md:text-2xl font-bold truncate drop-shadow-sm">{username}</h1>
               {isOwnProfile && (
                 <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full">Tu</span>
               )}
@@ -142,7 +182,7 @@ export default function UserProfilePage() {
           </div>
 
           <button onClick={handleCopyLink}
-            className="pb-2 flex items-center gap-2 px-4 py-2 rounded-lg glass-card text-sm text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
+            className="pb-1 flex items-center gap-2 px-3 py-2 rounded-lg glass-card text-sm text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 z-10">
             {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
             <span className="hidden sm:inline">{copied ? 'Copiat!' : 'Copiază link'}</span>
           </button>
