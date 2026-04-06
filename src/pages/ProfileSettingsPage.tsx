@@ -62,10 +62,7 @@ export default function ProfileSettingsPage() {
       setBannerUrl(profile.banner_url || null);
       setSelectedHat(profile.hat || 'none');
       setSelectedFrame((profile.avatar_frame as AvatarFrame) || 'none');
-      try {
-        const { data: premData } = await supabase.from('profiles').select('is_premium').eq('id', profile.id).maybeSingle();
-        setIsPremium(premData?.is_premium ?? false);
-      } catch { setIsPremium(false); }
+      setIsPremium(profile.is_premium === true);
       setLoading(false);
     }
     loadProfile();
@@ -238,7 +235,7 @@ export default function ProfileSettingsPage() {
         )}
 
         {/* Frame-uri avatar — doar pentru Premium */}
-        {isPremium && (
+        {(isPremium || isHatTester) && (
           <div className="glass-card rounded-2xl p-5 mb-4">
             <div className="flex items-center gap-2 mb-4">
               <span className="text-primary"><Sparkles className="h-4 w-4" /></span>
