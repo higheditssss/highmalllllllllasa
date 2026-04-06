@@ -197,9 +197,9 @@ export default function ProfileSettingsPage() {
 
         {/* ── SECȚIUNEA: POZĂ DE PROFIL ──────────────────────────────────── */}
         <Section icon={<User className="h-4 w-4" />} title="Poză de profil">
-          <div className="flex items-start gap-4">
+          <div className="flex flex-col gap-3">
             <div
-              className="relative w-20 h-20 rounded-xl bg-secondary overflow-hidden flex-shrink-0 cursor-pointer group ring-2 ring-border hover:ring-primary transition-all"
+              className="relative w-24 h-24 rounded-xl bg-secondary overflow-hidden cursor-pointer group ring-2 ring-border hover:ring-primary transition-all"
               onClick={() => avatarInputRef.current?.click()}
             >
               {avatarSrc
@@ -214,19 +214,19 @@ export default function ProfileSettingsPage() {
                 <Camera className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </div>
-            <div className="flex-1">
-              <button
-                onClick={() => avatarInputRef.current?.click()}
-                className="px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-sm font-medium transition-colors mb-2 flex items-center gap-2"
-              >
-                <Camera className="h-4 w-4" />
-                {avatarFile ? 'Schimbă selecția' : 'Alege poză'}
-              </button>
-              {avatarFile && (
-                <p className="text-xs text-primary font-medium mb-1">
-                  ✓ {avatarFile.name} ({(avatarFile.size / 1024 / 1024).toFixed(2)} MB)
-                </p>
-              )}
+            <button
+              onClick={() => avatarInputRef.current?.click()}
+              className="w-fit px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-sm font-medium transition-colors flex items-center gap-2"
+            >
+              <Camera className="h-4 w-4" />
+              {avatarFile ? 'Schimbă selecția' : 'Alege poză'}
+            </button>
+            {avatarFile && (
+              <p className="text-xs text-primary font-medium">
+                ✓ {avatarFile.name} ({(avatarFile.size / 1024 / 1024).toFixed(2)} MB)
+              </p>
+            )}
+            <div className="flex flex-col gap-0.5">
               <InfoRow label="Dimensiune recomandată" value={AVATAR_RECOMMENDED} />
               <InfoRow label="Maxim" value={`${AVATAR_MAX_MB} MB`} />
               <InfoRow label="Formate acceptate" value="JPG, PNG, WebP, GIF" />
