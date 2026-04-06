@@ -1,24 +1,112 @@
 import { cn } from '@/lib/utils';
 
+export type AvatarFrame = 'none' | 'gold' | 'fire' | 'ice' | 'galaxy' | 'nature' | 'demon';
+
 interface PremiumAvatarProps {
   avatarUrl: string | null;
   username: string;
   isPremium?: boolean;
+  frame?: AvatarFrame;
   size?: 'sm' | 'md' | 'lg';
   rounded?: 'full' | 'xl';
   className?: string;
 }
 
 const SIZE_MAP = {
-  sm:  { outer: 'w-10 h-10',              badge: 'w-4 h-4 text-[8px] -bottom-1 -right-1', text: 'text-sm',            padding: 'p-[2px]' },
-  md:  { outer: 'w-14 h-14',              badge: 'w-5 h-5 text-[9px] -bottom-1 -right-1', text: 'text-lg',            padding: 'p-[2px]' },
+  sm:  { outer: 'w-10 h-10',               badge: 'w-4 h-4 text-[8px] -bottom-1 -right-1', text: 'text-sm',             padding: 'p-[2px]' },
+  md:  { outer: 'w-14 h-14',               badge: 'w-5 h-5 text-[9px] -bottom-1 -right-1', text: 'text-lg',             padding: 'p-[2px]' },
   lg:  { outer: 'w-20 h-20 md:w-24 md:h-24', badge: 'w-6 h-6 text-xs -bottom-1 -right-1',  text: 'text-3xl md:text-4xl', padding: 'p-[3px]' },
 };
+
+export const FRAMES: { id: AvatarFrame; label: string; colors: string; speed: string; preview: string }[] = [
+  {
+    id: 'none',
+    label: 'Niciunul',
+    colors: '',
+    speed: '',
+    preview: '',
+  },
+  {
+    id: 'gold',
+    label: 'Auriu',
+    colors: '#ffd700, #ffec6e, #ff8c00, #ffd700',
+    speed: '3s',
+    preview: 'linear-gradient(135deg, #ffd700, #ff8c00)',
+  },
+  {
+    id: 'fire',
+    label: 'Foc',
+    colors: '#ff4500, #ff6a00, #ff0000, #ff8c00, #ff4500',
+    speed: '2s',
+    preview: 'linear-gradient(135deg, #ff4500, #ff0000)',
+  },
+  {
+    id: 'ice',
+    label: 'Gheață',
+    colors: '#00cfff, #a8edff, #0077ff, #00cfff',
+    speed: '3s',
+    preview: 'linear-gradient(135deg, #00cfff, #0077ff)',
+  },
+  {
+    id: 'galaxy',
+    label: 'Galaxie',
+    colors: '#9400d3, #4169e1, #00ced1, #ff69b4, #9400d3',
+    speed: '4s',
+    preview: 'linear-gradient(135deg, #9400d3, #4169e1)',
+  },
+  {
+    id: 'nature',
+    label: 'Natură',
+    colors: '#32cd32, #7fff00, #228b22, #32cd32',
+    speed: '3s',
+    preview: 'linear-gradient(135deg, #32cd32, #228b22)',
+  },
+  {
+    id: 'demon',
+    label: 'Demon',
+    colors: '#8b0000, #cc0000, #ff0044, #4a0000, #8b0000',
+    speed: '2.5s',
+    preview: 'linear-gradient(135deg, #8b0000, #ff0044)',
+  },
+];
+
+function getFrameStyle(frame: AvatarFrame, roundedClass: string) {
+  const f = FRAMES.find(f => f.id === frame);
+  if (!f || f.id === 'none') return null;
+  return `
+    @keyframes hm-spin-${frame} {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+    .hm-frame-${frame} {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    .hm-frame-${frame}::before {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: inherit;
+      background: conic-gradient(${f.colors});
+      animation: hm-spin-${frame} ${f.speed} linear infinite;
+      z-index: 0;
+    }
+    .hm-frame-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 1;
+    }
+  `;
+}
 
 export function PremiumAvatar({
   avatarUrl,
   username,
   isPremium = false,
+  frame = 'none',
   size = 'md',
   rounded = 'full',
   className,
@@ -36,7 +124,29 @@ export function PremiumAvatar({
     </div>
   );
 
-  if (!isPremium) {
+  const activeFrame = isPremium && frame && frame !== 'none' ? frame : null;
+
+  if (!activeFrame) {
+    // border animat gold dacă e premium dar fără frame ales
+    if (isPremium) {
+      return (
+        <div className={cn('relative flex-shrink-0', s.outer, className)}>
+          <style>{getFrameStyle('gold', roundedClass) || ''}</style>
+          <div className={cn('hm-frame-gold', roundedClass)}>
+            <div className={cn('hm-frame-inner bg-card', roundedClass)}>
+              {avatarContent}
+            </div>
+          </div>
+          <div className={cn(
+            'absolute flex items-center justify-center rounded-full z-10',
+            'bg-gradient-to-br from-yellow-400 to-orange-500',
+            'border-2 border-background shadow-md',
+            s.badge,
+          )}>👑</div>
+        </div>
+      );
+    }
+
     return (
       <div className={cn('relative flex-shrink-0', s.outer, className)}>
         <div className={cn('w-full h-full overflow-hidden bg-card shadow-lg ring-4 ring-background', roundedClass)}>
@@ -48,51 +158,18 @@ export function PremiumAvatar({
 
   return (
     <div className={cn('relative flex-shrink-0', s.outer, className)}>
-      <style>{`
-        @keyframes hm-spin {
-          from { transform: rotate(0deg); }
-          to   { transform: rotate(360deg); }
-        }
-        .hm-premium-ring {
-          position: relative;
-          width: 100%;
-          height: 100%;
-        }
-        .hm-premium-ring::before {
-          content: '';
-          position: absolute;
-          inset: -3px;
-          border-radius: inherit;
-          background: conic-gradient(
-            #ffd700, #ff8c00, #ff4500, #9400d3, #4169e1, #00ced1, #32cd32, #ffd700
-          );
-          animation: hm-spin 3s linear infinite;
-          z-index: 0;
-        }
-        .hm-premium-inner {
-          position: relative;
-          width: 100%;
-          height: 100%;
-          overflow: hidden;
-          z-index: 1;
-        }
-      `}</style>
-
-      <div className={cn('hm-premium-ring', roundedClass)}>
-        <div className={cn('hm-premium-inner bg-card', roundedClass)}>
+      <style>{getFrameStyle(activeFrame, roundedClass)}</style>
+      <div className={cn(`hm-frame-${activeFrame}`, roundedClass)}>
+        <div className={cn('hm-frame-inner bg-card', roundedClass)}>
           {avatarContent}
         </div>
       </div>
-
-      {/* Crown badge */}
       <div className={cn(
         'absolute flex items-center justify-center rounded-full z-10',
         'bg-gradient-to-br from-yellow-400 to-orange-500',
         'border-2 border-background shadow-md',
         s.badge,
-      )}>
-        👑
-      </div>
+      )}>👑</div>
     </div>
   );
 }

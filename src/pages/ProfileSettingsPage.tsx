@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { getCurrentProfile, uploadAvatar, uploadBanner, updateProfile } from '@/lib/auth';
 import { Camera, User, Image, Save, ArrowLeft, Info, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import palariePaie from '@/assets/palariepaie.png';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
+import { FRAMES, type AvatarFrame } from '@/components/PremiumAvatar';
 
 const AVATAR_MAX_MB = 2;
 const BANNER_MAX_MB = 5;
@@ -21,29 +23,7 @@ const HATS = [
     id: 'luffy',
     label: 'Pălărie de paie',
     preview: (
-      <svg viewBox="0 0 280 130" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-        <ellipse cx="148" cy="114" rx="126" ry="26" fill="#b8924a" opacity="0.4"/>
-        <ellipse cx="140" cy="112" rx="128" ry="26" fill="#e8b84b" stroke="#c08830" strokeWidth="2"/>
-        <line x1="30" y1="110" x2="50" y2="105" stroke="#c08830" strokeWidth="0.8" strokeLinecap="round" opacity="0.6"/>
-        <line x1="55" y1="106" x2="72" y2="102" stroke="#c08830" strokeWidth="0.8" strokeLinecap="round" opacity="0.6"/>
-        <line x1="200" y1="106" x2="218" y2="102" stroke="#c08830" strokeWidth="0.8" strokeLinecap="round" opacity="0.6"/>
-        <line x1="228" y1="108" x2="248" y2="106" stroke="#c08830" strokeWidth="0.8" strokeLinecap="round" opacity="0.6"/>
-        <ellipse cx="140" cy="75" rx="68" ry="10" fill="#e8b84b"/>
-        <path d="M72,75 C72,38 208,38 208,75" fill="#e8b84b" stroke="#c08830" strokeWidth="2"/>
-        <ellipse cx="140" cy="75" rx="68" ry="10" fill="#e8b84b" stroke="#c08830" strokeWidth="1.5"/>
-        <path d="M175,42 C195,50 208,62 208,75 L190,75 C190,62 180,50 165,44Z" fill="#c08830" opacity="0.3"/>
-        <line x1="118" y1="42" x2="122" y2="65" stroke="#c08830" strokeWidth="0.9" strokeLinecap="round" opacity="0.5"/>
-        <line x1="133" y1="38" x2="135" y2="63" stroke="#c08830" strokeWidth="0.9" strokeLinecap="round" opacity="0.5"/>
-        <line x1="148" y1="38" x2="146" y2="63" stroke="#c08830" strokeWidth="0.9" strokeLinecap="round" opacity="0.5"/>
-        <line x1="162" y1="41" x2="158" y2="64" stroke="#c08830" strokeWidth="0.9" strokeLinecap="round" opacity="0.5"/>
-        <line x1="175" y1="47" x2="169" y2="67" stroke="#c08830" strokeWidth="0.9" strokeLinecap="round" opacity="0.4"/>
-        <line x1="105" y1="48" x2="111" y2="67" stroke="#c08830" strokeWidth="0.9" strokeLinecap="round" opacity="0.4"/>
-        <path d="M72,80 Q140,70 208,80 Q208,98 140,100 Q72,98 72,80Z" fill="#cc1111" stroke="#880000" strokeWidth="1.5"/>
-        <path d="M72,80 Q140,72 208,80 Q140,76 72,80Z" fill="#ee2222" opacity="0.5"/>
-        <path d="M72,80 L58,74 L62,84 L72,88Z" fill="#bb0000" stroke="#880000" strokeWidth="1"/>
-        <path d="M72,80 L56,90 L62,96 L72,90Z" fill="#aa0000" stroke="#880000" strokeWidth="1"/>
-        <path d="M72,88 Q140,100 208,88" fill="none" stroke="#c08830" strokeWidth="1.5"/>
-      </svg>
+      <img src={palariePaie} alt="Pălărie de paie" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
     ),
   },
 ];
@@ -62,6 +42,8 @@ export default function ProfileSettingsPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [selectedHat, setSelectedHat] = useState<string>('none');
+  const [selectedFrame, setSelectedFrame] = useState<AvatarFrame>('none');
+  const [isPremium, setIsPremium] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
 
@@ -79,6 +61,11 @@ export default function ProfileSettingsPage() {
       setAvatarUrl(profile.avatar_url || null);
       setBannerUrl(profile.banner_url || null);
       setSelectedHat(profile.hat || 'none');
+      setSelectedFrame((profile.avatar_frame as AvatarFrame) || 'none');
+      try {
+        const { data: premData } = await supabase.from('profiles').select('is_premium').eq('id', profile.id).maybeSingle();
+        setIsPremium(premData?.is_premium ?? false);
+      } catch { setIsPremium(false); }
       setLoading(false);
     }
     loadProfile();
@@ -119,7 +106,7 @@ export default function ProfileSettingsPage() {
       else toast.error('Eroare la upload banner');
     }
 
-    const result = await updateProfile({ bio, hat: selectedHat } as any);
+    const result = await updateProfile({ bio, hat: selectedHat, avatar_frame: selectedFrame } as any);
     if (result.success) toast.success('Profilul a fost salvat!');
     else toast.error(result.error || 'Eroare la salvare');
 
@@ -246,6 +233,71 @@ export default function ProfileSettingsPage() {
 
             <p className="text-xs text-muted-foreground mt-3">
               Pălăria apare deasupra avatarului tău pe profil și în lista de prieteni.
+            </p>
+          </div>
+        )}
+
+        {/* Frame-uri avatar — doar pentru Premium */}
+        {isPremium && (
+          <div className="glass-card rounded-2xl p-5 mb-4">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-primary"><Sparkles className="h-4 w-4" /></span>
+              <h2 className="text-sm font-semibold">Frame avatar</h2>
+              <span className="ml-auto text-xs px-2 py-0.5 rounded-full font-semibold"
+                style={{ background: 'linear-gradient(135deg,#ffd700,#ff8c00)', color: '#1a0a00' }}>
+                👑 Premium
+              </span>
+            </div>
+
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+              {FRAMES.map(frame => (
+                <button
+                  key={frame.id}
+                  onClick={() => setSelectedFrame(frame.id)}
+                  className={cn(
+                    'flex-shrink-0 flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all',
+                    selectedFrame === frame.id
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border bg-secondary/50 hover:border-primary/50'
+                  )}
+                  style={{ minWidth: '80px' }}
+                >
+                  {/* Preview frame */}
+                  <div className="relative w-12 h-12">
+                    {frame.id !== 'none' ? (
+                      <>
+                        <style>{`
+                          @keyframes prev-spin-${frame.id} { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+                          .prev-frame-${frame.id} { position:relative; width:100%; height:100%; border-radius:9999px; }
+                          .prev-frame-${frame.id}::before {
+                            content:''; position:absolute; inset:-3px; border-radius:inherit;
+                            background: conic-gradient(${frame.colors});
+                            animation: prev-spin-${frame.id} ${frame.speed} linear infinite; z-index:0;
+                          }
+                          .prev-frame-inner { position:relative; width:100%; height:100%; border-radius:9999px; overflow:hidden; z-index:1; }
+                        `}</style>
+                        <div className={`prev-frame-${frame.id}`}>
+                          <div className="prev-frame-inner bg-secondary flex items-center justify-center">
+                            <span className="text-lg font-bold text-muted-foreground">{username?.charAt(0).toUpperCase() || '?'}</span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-secondary ring-2 ring-border flex items-center justify-center">
+                        <span className="text-lg font-bold text-muted-foreground">{username?.charAt(0).toUpperCase() || '?'}</span>
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-xs font-medium text-center leading-tight">{frame.label}</span>
+                  {selectedFrame === frame.id && (
+                    <span className="w-2 h-2 rounded-full bg-primary block" />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-3">
+              Frame-ul apare ca border animat în jurul avatarului tău pe profil.
             </p>
           </div>
         )}

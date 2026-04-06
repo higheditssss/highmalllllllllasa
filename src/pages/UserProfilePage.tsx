@@ -8,7 +8,8 @@ import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { FriendButton } from '@/components/FriendButton';
 import { FriendsPanel } from '@/components/FriendsPanel';
-import { PremiumAvatar } from '@/components/PremiumAvatar';
+import { PremiumAvatar, type AvatarFrame } from '@/components/PremiumAvatar';
+import palariePaie from '@/assets/palariepaie.png';
 
 const HAT_TESTERS = ['highedits', 'ovi'];
 
@@ -20,29 +21,7 @@ function StrawHat({ size = 96 }: { size?: number }) {
       width: `${size * 1.35}px`,
       height: `${size * 0.7}px`,
     }}>
-      <svg viewBox="0 0 280 130" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-        <ellipse cx="148" cy="114" rx="126" ry="26" fill="#b8924a" opacity="0.4"/>
-        <ellipse cx="140" cy="112" rx="128" ry="26" fill="#e8b84b" stroke="#c08830" strokeWidth="2"/>
-        <line x1="30" y1="110" x2="50" y2="105" stroke="#c08830" strokeWidth="0.8" strokeLinecap="round" opacity="0.6"/>
-        <line x1="55" y1="106" x2="72" y2="102" stroke="#c08830" strokeWidth="0.8" strokeLinecap="round" opacity="0.6"/>
-        <line x1="200" y1="106" x2="218" y2="102" stroke="#c08830" strokeWidth="0.8" strokeLinecap="round" opacity="0.6"/>
-        <line x1="228" y1="108" x2="248" y2="106" stroke="#c08830" strokeWidth="0.8" strokeLinecap="round" opacity="0.6"/>
-        <ellipse cx="140" cy="75" rx="68" ry="10" fill="#e8b84b"/>
-        <path d="M72,75 C72,38 208,38 208,75" fill="#e8b84b" stroke="#c08830" strokeWidth="2"/>
-        <ellipse cx="140" cy="75" rx="68" ry="10" fill="#e8b84b" stroke="#c08830" strokeWidth="1.5"/>
-        <path d="M175,42 C195,50 208,62 208,75 L190,75 C190,62 180,50 165,44Z" fill="#c08830" opacity="0.3"/>
-        <line x1="118" y1="42" x2="122" y2="65" stroke="#c08830" strokeWidth="0.9" strokeLinecap="round" opacity="0.5"/>
-        <line x1="133" y1="38" x2="135" y2="63" stroke="#c08830" strokeWidth="0.9" strokeLinecap="round" opacity="0.5"/>
-        <line x1="148" y1="38" x2="146" y2="63" stroke="#c08830" strokeWidth="0.9" strokeLinecap="round" opacity="0.5"/>
-        <line x1="162" y1="41" x2="158" y2="64" stroke="#c08830" strokeWidth="0.9" strokeLinecap="round" opacity="0.5"/>
-        <line x1="175" y1="47" x2="169" y2="67" stroke="#c08830" strokeWidth="0.9" strokeLinecap="round" opacity="0.4"/>
-        <line x1="105" y1="48" x2="111" y2="67" stroke="#c08830" strokeWidth="0.9" strokeLinecap="round" opacity="0.4"/>
-        <path d="M72,80 Q140,70 208,80 Q208,98 140,100 Q72,98 72,80Z" fill="#cc1111" stroke="#880000" strokeWidth="1.5"/>
-        <path d="M72,80 Q140,72 208,80 Q140,76 72,80Z" fill="#ee2222" opacity="0.5"/>
-        <path d="M72,80 L58,74 L62,84 L72,88Z" fill="#bb0000" stroke="#880000" strokeWidth="1"/>
-        <path d="M72,80 L56,90 L62,96 L72,90Z" fill="#aa0000" stroke="#880000" strokeWidth="1"/>
-        <path d="M72,88 Q140,100 208,88" fill="none" stroke="#c08830" strokeWidth="1.5"/>
-      </svg>
+      <img src={palariePaie} alt="Pălărie de paie" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
     </div>
   );
 }
@@ -74,6 +53,7 @@ export default function UserProfilePage() {
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [isPremium, setIsPremium] = useState(false);
   const [hat, setHat] = useState<string>('none');
+  const [avatarFrame, setAvatarFrame] = useState<AvatarFrame>('none');
 
   useEffect(() => {
     async function load() {
@@ -86,7 +66,7 @@ export default function UserProfilePage() {
 
       const [entries, profileRes, profileOwner] = await Promise.all([
         getAnimeListForUser(username),
-        supabase.from('profiles').select('avatar_url, banner_url, hat').eq('username', username).maybeSingle(),
+        supabase.from('profiles').select('avatar_url, banner_url, hat, avatar_frame').eq('username', username).maybeSingle(),
         currentUserId
           ? supabase.from('profiles').select('username').eq('id', currentUserId).single()
           : Promise.resolve({ data: null }),
@@ -96,6 +76,7 @@ export default function UserProfilePage() {
       setAvatarUrl(profileRes.data?.avatar_url || null);
       setBannerUrl(profileRes.data?.banner_url || null);
       setHat(profileRes.data?.hat || 'none');
+      setAvatarFrame((profileRes.data?.avatar_frame as AvatarFrame) || 'none');
       // is_premium fetch separat ca să nu cadă dacă coloana nu există
       try {
         const { data: premiumData } = await supabase.from('profiles').select('is_premium').eq('username', username).maybeSingle();
@@ -148,6 +129,7 @@ export default function UserProfilePage() {
               avatarUrl={avatarUrl}
               username={username || ''}
               isPremium={isPremium}
+              frame={avatarFrame}
               size="lg"
               rounded="xl"
             />
