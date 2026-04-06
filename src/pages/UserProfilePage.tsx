@@ -109,7 +109,7 @@ export default function UserProfilePage() {
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl md:text-2xl font-bold truncate drop-shadow-sm">{username}</h1>
               {isOwnProfile && (
-                <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full">Tu</span>
+                <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full"></span>
               )}
             </div>
             <p className="text-sm text-muted-foreground mt-0.5"></p>
