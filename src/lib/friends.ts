@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { sendNotification } from './notifications';
 
 export type FriendshipStatus = 'none' | 'pending_sent' | 'pending_received' | 'accepted';
 
@@ -57,15 +58,29 @@ export async function sendFriendRequest(targetUsername: string): Promise<{ succe
     .insert({ requester_id: user.id, addressee_id: targetProfile.id });
 
   if (error) return { success: false, error: error.message };
+
+  // Trimite notificare
+  await sendNotification(targetProfile.id, 'friend_request');
+
   return { success: true };
 }
 
 // Acceptă cerere de prietenie
 export async function acceptFriendRequest(friendshipId: string): Promise<{ success: boolean }> {
+  const { data: friendship } = await supabase
+    .from('friendships')
+    .select('requester_id')
+    .eq('id', friendshipId)
+    .single();
+
   const { error } = await supabase
     .from('friendships')
     .update({ status: 'accepted', updated_at: new Date().toISOString() })
     .eq('id', friendshipId);
+
+  if (!error && friendship) {
+    await sendNotification(friendship.requester_id, 'friend_accepted');
+  }
 
   return { success: !error };
 }

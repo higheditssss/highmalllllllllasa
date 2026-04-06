@@ -5,6 +5,7 @@ import { getCurrentProfile, logout } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useState, useEffect } from 'react';
 import highmalLogo from '@/assets/highmal-logo.png';
+import { NotificationBell } from '@/components/NotificationBell';
 
 const navItems = [
   { to: '/', label: 'Acasă', icon: Home },
@@ -73,10 +74,10 @@ export function Navbar() {
             ))}
           </div>
           <div className="flex items-center gap-2">
-            {/* FIX: don't render auth buttons until we know the auth state */}
             {!authLoading && (
               username ? (
                 <>
+                  <NotificationBell />
                   <Link to={`/user/${username}`}
                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-all">
                     {avatarUrl
