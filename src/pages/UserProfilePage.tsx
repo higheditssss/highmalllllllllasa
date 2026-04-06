@@ -1,11 +1,11 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getAnimeListForUser } from '@/lib/anime-storage';
-import { getCurrentProfile, uploadAvatar, uploadBanner } from '@/lib/auth';
+import { getCurrentProfile } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { AnimeListEntry, WatchStatus, STATUS_LABELS } from '@/types/anime';
-import { Star, Tv, CheckCircle, PauseCircle, XCircle, BookOpen, Copy, Check, Camera, Settings } from 'lucide-react';
+import { Star, Tv, CheckCircle, PauseCircle, XCircle, BookOpen, Copy, Check, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 const STATUS_ICONS: Record<WatchStatus, React.ReactNode> = {
@@ -33,10 +33,6 @@ export default function UserProfilePage() {
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [uploadingBanner, setUploadingBanner] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function load() {
@@ -78,63 +74,16 @@ export default function UserProfilePage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { toast.error('Imaginea trebuie să fie sub 2MB'); return; }
-    setUploadingAvatar(true);
-    const url = await uploadAvatar(file);
-    setUploadingAvatar(false);
-    if (url) {
-      setAvatarUrl(url + '?t=' + Date.now());
-      toast.success('Poza de profil actualizată!');
-    } else {
-      toast.error('Eroare la upload — verifică că bucket-ul "avatars" există și e public');
-    }
-  };
-
-  const handleBannerChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error('Bannerul trebuie să fie sub 5MB'); return; }
-    setUploadingBanner(true);
-    const url = await uploadBanner(file);
-    setUploadingBanner(false);
-    if (url) {
-      setBannerUrl(url + '?t=' + Date.now());
-      toast.success('Banner actualizat!');
-    } else {
-      toast.error('Eroare la upload banner');
-    }
-  };
-
   return (
     <div className="min-h-screen pb-24 md:pb-8 md:pt-16 bg-background">
 
       {/* Banner */}
-      <div className="h-36 md:h-48 bg-secondary relative overflow-hidden group">
+      <div className="h-36 md:h-48 bg-secondary relative overflow-hidden">
         {bannerUrl
           ? <img src={bannerUrl} alt="banner" className="w-full h-full object-cover" />
           : <div className="absolute inset-0 opacity-30"
               style={{ backgroundImage: 'radial-gradient(ellipse at 60% 50%, hsl(var(--primary)) 0%, transparent 70%)' }} />
         }
-        {/* Banner upload button - only for own profile */}
-        {isOwnProfile && (
-          <>
-            <button
-              onClick={() => bannerInputRef.current?.click()}
-              disabled={uploadingBanner}
-              className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/50 backdrop-blur-sm text-white/80 hover:text-white text-xs font-medium transition-colors opacity-0 group-hover:opacity-100"
-            >
-              {uploadingBanner
-                ? <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
-                : <Camera className="h-3.5 w-3.5" />
-              }
-              Schimbă bannerul
-            </button>
-            <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleBannerChange} />
-          </>
-        )}
       </div>
 
       <div className="container px-4">
@@ -153,21 +102,6 @@ export default function UserProfilePage() {
                   </div>
               }
             </div>
-            {isOwnProfile && (
-              <>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingAvatar}
-                  className="absolute -bottom-2 -right-2 p-1.5 rounded-lg bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shadow-md z-10"
-                >
-                  {uploadingAvatar
-                    ? <div className="w-3.5 h-3.5 border border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
-                    : <Camera className="h-3.5 w-3.5" />
-                  }
-                </button>
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
-              </>
-            )}
           </div>
 
           {/* Nume + info — pe fundal semi-transparent ca să fie vizibil peste banner */}
