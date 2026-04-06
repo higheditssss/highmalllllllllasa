@@ -19,19 +19,30 @@ export function Navbar() {
   const [username, setUsername] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
+  async function loadProfile() {
+    const profile = await getCurrentProfile();
+    setUsername(profile?.username || null);
+    setAvatarUrl(profile?.avatar_url || null);
+  }
+
   useEffect(() => {
-    async function loadProfile() {
-      const profile = await getCurrentProfile();
-      setUsername(profile?.username || null);
-      setAvatarUrl(profile?.avatar_url || null);
-    }
     loadProfile();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      loadProfile();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        loadProfile();
+      } else if (event === 'SIGNED_OUT') {
+        setUsername(null);
+        setAvatarUrl(null);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // Reload profile when route changes (catches post-login navigation)
+  useEffect(() => {
+    loadProfile();
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     await logout();
