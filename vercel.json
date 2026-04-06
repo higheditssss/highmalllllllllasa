@@ -2,6 +2,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "devCommand": "npx vite --port $PORT",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]

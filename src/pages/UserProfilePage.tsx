@@ -85,7 +85,7 @@ export default function UserProfilePage() {
       setAvatarUrl(url + '?t=' + Date.now());
       toast.success('Poza de profil actualizată!');
     } else {
-      toast.error('Eroare la upload');
+      toast.error('Eroare la upload — verifică că bucket-ul "avatars" există și e public în Supabase Storage');
     }
   };
 
@@ -100,24 +100,32 @@ export default function UserProfilePage() {
       <div className="container px-4">
         {/* Profile header */}
         <div className="flex items-end gap-5 -mt-12 mb-6">
+          {/* FIX: avatar fără border care acopere poza, buton camera vizibil */}
           <div className="relative flex-shrink-0">
-            <div className="w-24 h-24 rounded-xl border-4 border-background bg-card flex items-center justify-center overflow-hidden">
+            <div className="w-24 h-24 rounded-xl bg-card shadow-lg overflow-hidden ring-4 ring-background">
               {avatarUrl
                 ? <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
-                : <span className="text-4xl font-bold text-muted-foreground select-none">{username?.charAt(0).toUpperCase() || '?'}</span>
+                : <div className="w-full h-full flex items-center justify-center bg-secondary">
+                    <span className="text-4xl font-bold text-muted-foreground select-none">
+                      {username?.charAt(0).toUpperCase() || '?'}
+                    </span>
+                  </div>
               }
             </div>
             {isOwnProfile && (
               <>
-                <button onClick={() => fileInputRef.current?.click()} disabled={uploadingAvatar}
-                  className="absolute -bottom-1 -right-1 p-1.5 rounded-lg bg-card border border-border text-muted-foreground hover:text-foreground transition-colors">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="absolute -bottom-2 -right-2 p-2 rounded-lg bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shadow-md z-10"
+                >
                   <Camera className="h-3.5 w-3.5" />
                 </button>
                 <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
               </>
             )}
             {uploadingAvatar && (
-              <div className="absolute inset-0 rounded-xl bg-black/60 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-xl bg-black/60 flex items-center justify-center z-20">
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               </div>
             )}

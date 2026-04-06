@@ -18,11 +18,14 @@ export function Navbar() {
   const navigate = useNavigate();
   const [username, setUsername] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  // FIX: loading state prevents login button from flashing before auth check
+  const [authLoading, setAuthLoading] = useState(true);
 
   async function loadProfile() {
     const profile = await getCurrentProfile();
     setUsername(profile?.username || null);
     setAvatarUrl(profile?.avatar_url || null);
+    setAuthLoading(false);
   }
 
   useEffect(() => {
@@ -34,6 +37,7 @@ export function Navbar() {
       } else if (event === 'SIGNED_OUT') {
         setUsername(null);
         setAvatarUrl(null);
+        setAuthLoading(false);
       }
     });
     return () => subscription.unsubscribe();
@@ -69,27 +73,30 @@ export function Navbar() {
             ))}
           </div>
           <div className="flex items-center gap-2">
-            {username ? (
-              <>
-                <Link to={`/user/${username}`}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-all">
-                  {avatarUrl
-                    ? <img src={avatarUrl} alt={username} className="w-6 h-6 rounded-full object-cover" />
-                    : <User className="h-4 w-4" />}
-                  {username}
+            {/* FIX: don't render auth buttons until we know the auth state */}
+            {!authLoading && (
+              username ? (
+                <>
+                  <Link to={`/user/${username}`}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-all">
+                    {avatarUrl
+                      ? <img src={avatarUrl} alt={username} className="w-6 h-6 rounded-full object-cover" />
+                      : <User className="h-4 w-4" />}
+                    {username}
+                  </Link>
+                  <button onClick={handleLogout}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-all">
+                    <LogOut className="h-4 w-4" />
+                    Ieși
+                  </button>
+                </>
+              ) : (
+                <Link to="/login"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
+                  <LogIn className="h-4 w-4" />
+                  Intră în cont
                 </Link>
-                <button onClick={handleLogout}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-all">
-                  <LogOut className="h-4 w-4" />
-                  Ieși
-                </button>
-              </>
-            ) : (
-              <Link to="/login"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
-                <LogIn className="h-4 w-4" />
-                Intră în cont
-              </Link>
+              )
             )}
           </div>
         </div>
@@ -105,21 +112,24 @@ export function Navbar() {
               {item.label}
             </Link>
           ))}
-          {username ? (
-            <Link to={`/user/${username}`}
-              className={cn('flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-                location.pathname.startsWith('/user') ? 'text-primary' : 'text-muted-foreground')}>
-              {avatarUrl
-                ? <img src={avatarUrl} alt={username} className="w-5 h-5 rounded-full object-cover" />
-                : <User className="h-5 w-5" />}
-              Profil
-            </Link>
-          ) : (
-            <Link to="/login"
-              className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground">
-              <LogIn className="h-5 w-5" />
-              Login
-            </Link>
+          {/* FIX: same loading guard for mobile nav */}
+          {!authLoading && (
+            username ? (
+              <Link to={`/user/${username}`}
+                className={cn('flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                  location.pathname.startsWith('/user') ? 'text-primary' : 'text-muted-foreground')}>
+                {avatarUrl
+                  ? <img src={avatarUrl} alt={username} className="w-5 h-5 rounded-full object-cover" />
+                  : <User className="h-5 w-5" />}
+                Profil
+              </Link>
+            ) : (
+              <Link to="/login"
+                className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground">
+                <LogIn className="h-5 w-5" />
+                Login
+              </Link>
+            )
           )}
         </div>
       </nav>

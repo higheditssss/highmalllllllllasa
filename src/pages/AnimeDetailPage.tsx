@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Anime, WatchStatus, STATUS_LABELS } from '@/types/anime';
 import { addAnimeToList, getAnimeList } from '@/lib/anime-storage';
 import { AnimeCard } from '@/components/AnimeCard';
-import { Star, ArrowLeft, Play, Calendar, Tv, Clock, Plus, Check, ExternalLink } from 'lucide-react';
+import { Star, ArrowLeft, Calendar, Tv, Clock, Plus, Check, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState } from 'react';
 
@@ -62,24 +62,31 @@ export default function AnimeDetailPage() {
     staleTime: 1000 * 60 * 30,
   });
 
-  const listEntry = getAnimeList().find(e => e.anime.mal_id === Number(id));
+  // FIX: getAnimeList e acum async, folosim useQuery în loc de apel sincron
+  const { data: animeList } = useQuery({
+    queryKey: ['anime-list'],
+    queryFn: getAnimeList,
+    staleTime: 1000 * 60 * 5,
+  });
 
-  const handleAdd = (status: WatchStatus) => {
+  const listEntry = animeList?.find(e => e.anime.mal_id === Number(id));
+
+  const handleAdd = async (status: WatchStatus) => {
     if (!anime) return;
-    addAnimeToList(anime, status);
+    await addAnimeToList(anime, status);
     setShowStatusMenu(false);
     toast.success(`${anime.title_english || anime.title} adăugat ca "${STATUS_LABELS[status]}"!`);
   };
 
-  const handleAddRec = (a: Anime, status: WatchStatus) => {
-    addAnimeToList(a, status);
+  const handleAddRec = async (a: Anime, status: WatchStatus) => {
+    await addAnimeToList(a, status);
     toast.success(`${a.title_english || a.title} adăugat!`);
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen pb-24 md:pb-8 md:pt-20">
-        <div className="container px-4 pt-8">
+      <div className="min-h-screen pb-24 md:pb-8 pt-16 md:pt-20">
+        <div className="container px-4 pt-4">
           <div className="animate-pulse space-y-4">
             <div className="h-8 w-32 bg-secondary rounded-lg" />
             <div className="flex gap-4">
@@ -99,7 +106,7 @@ export default function AnimeDetailPage() {
 
   if (error || !anime) {
     return (
-      <div className="min-h-screen pb-24 md:pb-8 md:pt-20 flex items-center justify-center">
+      <div className="min-h-screen pb-24 md:pb-8 pt-16 md:pt-20 flex items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground mb-4">Anime-ul nu a fost găsit</p>
           <Link to="/" className="text-primary hover:underline">Înapoi acasă</Link>
@@ -109,19 +116,16 @@ export default function AnimeDetailPage() {
   }
 
   return (
-    <div className="min-h-screen pb-24 md:pb-8 md:pt-20">
-      {/* Back button */}
-      <div className="container px-4 pt-6">
+    <div className="min-h-screen pb-24 md:pb-8 pt-16 md:pt-20">
+      <div className="container px-4 pt-2">
         <button onClick={() => window.history.back()} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
           <ArrowLeft className="h-4 w-4" />
           Înapoi
         </button>
       </div>
 
-      {/* Hero section */}
       <div className="container px-4">
         <div className="flex gap-4 md:gap-6">
-          {/* Poster */}
           <div className="w-32 md:w-44 flex-shrink-0">
             <div className="relative rounded-xl overflow-hidden glow-gold">
               <img
@@ -138,7 +142,6 @@ export default function AnimeDetailPage() {
             </div>
           </div>
 
-          {/* Info */}
           <div className="flex-1 min-w-0">
             <h1 className="font-display text-xl md:text-2xl font-bold leading-tight">
               {anime.title_english || anime.title}
@@ -147,7 +150,6 @@ export default function AnimeDetailPage() {
               <p className="text-sm text-muted-foreground mt-0.5">{anime.title}</p>
             )}
 
-            {/* Genres */}
             {anime.genres && anime.genres.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-3">
                 {anime.genres.map(g => (
@@ -158,7 +160,6 @@ export default function AnimeDetailPage() {
               </div>
             )}
 
-            {/* Meta info */}
             <div className="mt-3 space-y-1.5 text-sm text-muted-foreground">
               {anime.type && (
                 <div className="flex items-center gap-2">
@@ -180,7 +181,6 @@ export default function AnimeDetailPage() {
               )}
             </div>
 
-            {/* Add to list / status */}
             <div className="mt-4 relative">
               {listEntry ? (
                 <div className="flex items-center gap-2">
@@ -216,7 +216,6 @@ export default function AnimeDetailPage() {
         </div>
       </div>
 
-      {/* Extra stats */}
       {(anime.rank || anime.popularity || anime.studios?.length) && (
         <div className="container px-4 mt-6">
           <div className="grid grid-cols-3 gap-3">
@@ -242,7 +241,6 @@ export default function AnimeDetailPage() {
         </div>
       )}
 
-      {/* Synopsis */}
       {anime.synopsis && (
         <div className="container px-4 mt-6">
           <h2 className="font-display text-lg font-bold mb-3">Sinopsis</h2>
@@ -254,7 +252,6 @@ export default function AnimeDetailPage() {
         </div>
       )}
 
-      {/* Trailer */}
       {anime.trailer?.youtube_id && (
         <div className="container px-4 mt-6">
           <h2 className="font-display text-lg font-bold mb-3">Trailer</h2>
@@ -272,7 +269,6 @@ export default function AnimeDetailPage() {
         </div>
       )}
 
-      {/* MAL Link */}
       <div className="container px-4 mt-6">
         <a
           href={`https://myanimelist.net/anime/${anime.mal_id}`}
@@ -285,7 +281,6 @@ export default function AnimeDetailPage() {
         </a>
       </div>
 
-      {/* Recommendations */}
       {recommendations && recommendations.length > 0 && (
         <div className="container px-4 mt-8 mb-8">
           <h2 className="font-display text-lg font-bold mb-4">Recomandări similare</h2>
