@@ -156,9 +156,6 @@ export default function UserProfilePage() {
 
         {showAddFriend && <AddFriendModal onClose={() => setShowAddFriend(false)} />}
 
-        {/* Friends */}
-        <FriendsPanel username={username!} isOwnProfile={isOwnProfile} />
-
         {/* Stats */}
         <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mb-6">
           {[
@@ -174,6 +171,9 @@ export default function UserProfilePage() {
             </div>
           ))}
         </div>
+
+        {/* Friends */}
+        <FriendsPanel username={username!} isOwnProfile={isOwnProfile} />
 
         {/* Tabs */}
         <div className="border-b border-border mb-6">
