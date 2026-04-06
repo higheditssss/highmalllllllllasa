@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Users, UserCheck, UserX } from 'lucide-react';
 import { getFriendsForUser, getPendingRequests, acceptFriendRequest, removeFriendship, FriendProfile } from '@/lib/friends';
 import { toast } from 'sonner';
+import { PremiumAvatar } from '@/components/PremiumAvatar';
 
 interface FriendsPanelProps {
   username: string;
@@ -64,12 +65,13 @@ export function FriendsPanel({ username, isOwnProfile }: FriendsPanelProps) {
             {pendingRequests.map(({ id, profile }) => (
               <div key={id} className="flex items-center justify-between gap-3 p-2 rounded-lg bg-secondary/50">
                 <Link to={`/user/${profile.username}`} className="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity">
-                  {profile.avatar_url
-                    ? <img src={profile.avatar_url} alt={profile.username} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
-                    : <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-xs font-bold flex-shrink-0">
-                        {profile.username.charAt(0).toUpperCase()}
-                      </div>
-                  }
+                  <PremiumAvatar
+                    avatarUrl={profile.avatar_url || null}
+                    username={profile.username}
+                    isPremium={profile.is_premium ?? false}
+                    size="sm"
+                    rounded="full"
+                  />
                   <span className="text-sm font-medium truncate">{profile.username}</span>
                 </Link>
                 <div className="flex items-center gap-1 flex-shrink-0">
@@ -103,13 +105,13 @@ export function FriendsPanel({ username, isOwnProfile }: FriendsPanelProps) {
           {friends.map(friend => (
             <Link key={friend.id} to={`/user/${friend.username}`}
               className="flex flex-col items-center gap-1 group">
-              {friend.avatar_url
-                ? <img src={friend.avatar_url} alt={friend.username}
-                    className="w-10 h-10 rounded-full object-cover ring-2 ring-transparent group-hover:ring-primary transition-all" />
-                : <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-sm font-bold ring-2 ring-transparent group-hover:ring-primary transition-all">
-                    {friend.username.charAt(0).toUpperCase()}
-                  </div>
-              }
+              <PremiumAvatar
+                avatarUrl={friend.avatar_url || null}
+                username={friend.username}
+                isPremium={(friend as any).is_premium ?? false}
+                size="sm"
+                rounded="full"
+              />
               <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors max-w-[60px] truncate">
                 {friend.username}
               </span>

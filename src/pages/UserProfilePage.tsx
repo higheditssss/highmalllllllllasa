@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { FriendButton } from '@/components/FriendButton';
 import { FriendsPanel } from '@/components/FriendsPanel';
+import { PremiumAvatar } from '@/components/PremiumAvatar';
 
 const STATUS_ICONS: Record<WatchStatus, React.ReactNode> = {
   watching: <Tv className="h-4 w-4" />,
@@ -34,6 +35,7 @@ export default function UserProfilePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
+  const [isPremium, setIsPremium] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -46,7 +48,7 @@ export default function UserProfilePage() {
 
       const [entries, profileRes, profileOwner] = await Promise.all([
         getAnimeListForUser(username),
-        supabase.from('profiles').select('avatar_url, banner_url').eq('username', username).single(),
+        supabase.from('profiles').select('avatar_url, banner_url, is_premium').eq('username', username).single(),
         currentUserId
           ? supabase.from('profiles').select('username').eq('id', currentUserId).single()
           : Promise.resolve({ data: null }),
@@ -55,6 +57,7 @@ export default function UserProfilePage() {
       setList(entries);
       setAvatarUrl(profileRes.data?.avatar_url || null);
       setBannerUrl(profileRes.data?.banner_url || null);
+      setIsPremium(profileRes.data?.is_premium ?? false);
       setIsOwnProfile(profileOwner.data?.username === username);
       setIsLoggedIn(!!currentUserId);
       setLoading(false);
@@ -95,24 +98,27 @@ export default function UserProfilePage() {
 
           {/* Avatar */}
           <div className="relative flex-shrink-0 z-10">
-            <div className="w-20 h-20 md:w-24 md:h-24 rounded-xl bg-card overflow-hidden ring-4 ring-background shadow-lg">
-              {avatarUrl
-                ? <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
-                : <div className="w-full h-full flex items-center justify-center bg-secondary">
-                    <span className="text-3xl md:text-4xl font-bold text-muted-foreground select-none">
-                      {username?.charAt(0).toUpperCase() || '?'}
-                    </span>
-                  </div>
-              }
-            </div>
+            <PremiumAvatar
+              avatarUrl={avatarUrl}
+              username={username || ''}
+              isPremium={isPremium}
+              size="lg"
+              rounded="xl"
+            />
           </div>
 
           {/* Nume + info — pe fundal semi-transparent ca să fie vizibil peste banner */}
           <div className="flex-1 min-w-0 pb-1 z-10">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl md:text-2xl font-bold truncate drop-shadow-sm">{username}</h1>
+              {isPremium && (
+                <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full"
+                  style={{ background: 'linear-gradient(135deg, #ffd700, #ff8c00)', color: '#1a0a00' }}>
+                  👑 Premium
+                </span>
+              )}
               {isOwnProfile && (
-                <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full"></span>
+                <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full">Tu</span>
               )}
             </div>
             <p className="text-sm text-muted-foreground mt-0.5"></p>

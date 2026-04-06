@@ -23,6 +23,9 @@ export function Navbar() {
   // FIX: loading state prevents login button from flashing before auth check
   const [authLoading, setAuthLoading] = useState(true);
 
+  const PREMIUM_TESTERS = ['highedits'];
+  const isPremiumTester = username ? PREMIUM_TESTERS.includes(username) : false;
+
   async function loadProfile() {
     const profile = await getCurrentProfile();
     setUsername(profile?.username || null);
@@ -73,6 +76,13 @@ export function Navbar() {
                 {item.label}
               </Link>
             ))}
+            {!authLoading && isPremiumTester && (
+              <Link to="/premium"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
+                style={{ background: 'linear-gradient(135deg, #ffd700, #ff8c00)', color: '#1a0a00' }}>
+                👑 Premium
+              </Link>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {!authLoading && (
@@ -114,6 +124,14 @@ export function Navbar() {
               {item.label}
             </Link>
           ))}
+          {!authLoading && isPremiumTester && (
+            <Link to="/premium"
+              className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+              style={{ color: '#ff8c00' }}>
+              <span className="text-lg leading-none">👑</span>
+              Premium
+            </Link>
+          )}
           {/* FIX: same loading guard for mobile nav */}
           {!authLoading && (
             username ? (

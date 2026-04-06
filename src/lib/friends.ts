@@ -7,6 +7,7 @@ export interface FriendProfile {
   id: string;
   username: string;
   avatar_url: string | null;
+  is_premium?: boolean;
 }
 
 // Obține statusul prieteniei între userul curent și altul (după username)
@@ -111,8 +112,8 @@ export async function getFriendsForUser(username: string): Promise<FriendProfile
       id,
       requester_id,
       addressee_id,
-      requester:profiles!friendships_requester_id_fkey(id, username, avatar_url),
-      addressee:profiles!friendships_addressee_id_fkey(id, username, avatar_url)
+      requester:profiles!friendships_requester_id_fkey(id, username, avatar_url, is_premium),
+      addressee:profiles!friendships_addressee_id_fkey(id, username, avatar_url, is_premium)
     `)
     .eq('status', 'accepted')
     .or(`requester_id.eq.${profile.id},addressee_id.eq.${profile.id}`);
@@ -121,7 +122,7 @@ export async function getFriendsForUser(username: string): Promise<FriendProfile
 
   return data.map((f: any) => {
     const friend = f.requester_id === profile.id ? f.addressee : f.requester;
-    return { id: friend.id, username: friend.username, avatar_url: friend.avatar_url };
+    return { id: friend.id, username: friend.username, avatar_url: friend.avatar_url, is_premium: friend.is_premium ?? false };
   });
 }
 
