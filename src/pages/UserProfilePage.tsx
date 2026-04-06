@@ -48,7 +48,7 @@ export default function UserProfilePage() {
 
       const [entries, profileRes, profileOwner] = await Promise.all([
         getAnimeListForUser(username),
-        supabase.from('profiles').select('avatar_url, banner_url, is_premium').eq('username', username).single(),
+        supabase.from('profiles').select('avatar_url, banner_url').eq('username', username).maybeSingle(),
         currentUserId
           ? supabase.from('profiles').select('username').eq('id', currentUserId).single()
           : Promise.resolve({ data: null }),
@@ -57,7 +57,11 @@ export default function UserProfilePage() {
       setList(entries);
       setAvatarUrl(profileRes.data?.avatar_url || null);
       setBannerUrl(profileRes.data?.banner_url || null);
-      setIsPremium(profileRes.data?.is_premium ?? false);
+      // is_premium fetch separat ca să nu cadă dacă coloana nu există
+      try {
+        const { data: premiumData } = await supabase.from('profiles').select('is_premium').eq('username', username).maybeSingle();
+        setIsPremium(premiumData?.is_premium ?? false);
+      } catch { setIsPremium(false); }
       setIsOwnProfile(profileOwner.data?.username === username);
       setIsLoggedIn(!!currentUserId);
       setLoading(false);
