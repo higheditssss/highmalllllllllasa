@@ -156,18 +156,27 @@ export default function ProfileSettingsPage() {
           </p>
 
           {/* Banner preview */}
-          <div className="relative h-28 bg-secondary">
+          <div className="relative h-28 bg-secondary group cursor-pointer" onClick={() => bannerInputRef.current?.click()}>
             {bannerSrc
               ? <img src={bannerSrc} alt="banner" className="w-full h-full object-cover" />
               : <div className="absolute inset-0 opacity-30"
                   style={{ backgroundImage: 'radial-gradient(ellipse at 60% 50%, hsl(var(--primary)) 0%, transparent 70%)' }} />
             }
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 bg-black/60 text-white text-xs px-3 py-1.5 rounded-lg">
+                <Camera className="h-3.5 w-3.5" />
+                Schimbă bannerul
+              </div>
+            </div>
           </div>
 
           {/* Avatar preview (overlapping banner) */}
           <div className="px-5 pb-4">
             <div className="relative -mt-8 mb-3 w-16 h-16">
-              <div className="w-16 h-16 rounded-xl bg-card overflow-hidden ring-4 ring-background shadow-lg">
+              <div
+                className="w-16 h-16 rounded-xl bg-card overflow-hidden ring-4 ring-background shadow-lg cursor-pointer group"
+                onClick={() => avatarInputRef.current?.click()}
+              >
                 {avatarSrc
                   ? <img src={avatarSrc} alt={username} className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex items-center justify-center bg-secondary">
@@ -176,6 +185,9 @@ export default function ProfileSettingsPage() {
                       </span>
                     </div>
                 }
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors rounded-xl flex items-center justify-center">
+                  <Camera className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
               </div>
             </div>
             <p className="font-bold text-base">{username}</p>
@@ -330,4 +342,4 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       <span className="font-medium text-foreground/70">{value}</span>
     </div>
   );
-}s
+}
