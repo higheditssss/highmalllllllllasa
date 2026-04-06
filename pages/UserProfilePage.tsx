@@ -43,16 +43,24 @@ export default function UserProfilePage() {
     async function load() {
       setLoading(true);
       if (!username) return;
-      const [entries, profileRes, currentProfile] = await Promise.all([
+
+      // Așteaptă sesiunea Supabase să fie gata
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUserId = session?.user?.id || null;
+
+      const [entries, profileRes, profileOwner] = await Promise.all([
         getAnimeListForUser(username),
         supabase.from('profiles').select('avatar_url, banner_url').eq('username', username).single(),
-        getCurrentProfile(),
+        currentUserId
+          ? supabase.from('profiles').select('username').eq('id', currentUserId).single()
+          : Promise.resolve({ data: null }),
       ]);
+
       setList(entries);
       setAvatarUrl(profileRes.data?.avatar_url || null);
       setBannerUrl(profileRes.data?.banner_url || null);
-      setIsOwnProfile(currentProfile?.username === username);
-      setIsLoggedIn(!!currentProfile);
+      setIsOwnProfile(profileOwner.data?.username === username);
+      setIsLoggedIn(!!currentUserId);
       setLoading(false);
     }
     load();
