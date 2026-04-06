@@ -63,7 +63,7 @@ export function Navbar() {
             <img src={highmalLogo} alt="HIGHMAL" className="h-8" />
           </Link>
           <div className="flex items-center gap-1">
-            {navItems.map(item => (
+            {!authLoading && username && navItems.map(item => (
               <Link key={item.to} to={item.to}
                 className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
                   location.pathname === item.to ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-secondary')}>
@@ -104,7 +104,7 @@ export function Navbar() {
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-card border-t border-border/50 px-2 py-2">
         <div className="flex items-center justify-around">
-          {navItems.map(item => (
+          {!authLoading && username && navItems.map(item => (
             <Link key={item.to} to={item.to}
               className={cn('flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
                 location.pathname === item.to ? 'text-primary' : 'text-muted-foreground')}>
