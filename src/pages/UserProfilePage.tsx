@@ -3,10 +3,13 @@ import { getAnimeListForUser } from '@/lib/anime-storage';
 import { getCurrentProfile } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { AnimeListEntry, WatchStatus, STATUS_LABELS } from '@/types/anime';
-import { Star, Tv, CheckCircle, PauseCircle, XCircle, BookOpen, Copy, Check, Settings } from 'lucide-react';
+import { Star, Tv, CheckCircle, PauseCircle, XCircle, BookOpen, Copy, Check, Settings, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { FriendButton } from '@/components/FriendButton';
+import { FriendsPanel } from '@/components/FriendsPanel';
+import { AddFriendModal } from '@/components/AddFriendModal';
 
 const STATUS_ICONS: Record<WatchStatus, React.ReactNode> = {
   watching: <Tv className="h-4 w-4" />,
@@ -28,9 +31,11 @@ export default function UserProfilePage() {
   const { username } = useParams<{ username: string }>();
   const [activeTab, setActiveTab] = useState<WatchStatus | 'all'>('all');
   const [copied, setCopied] = useState(false);
+  const [showAddFriend, setShowAddFriend] = useState(false);
   const [list, setList] = useState<AnimeListEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
 
@@ -38,15 +43,24 @@ export default function UserProfilePage() {
     async function load() {
       setLoading(true);
       if (!username) return;
-      const [entries, profileRes, currentProfile] = await Promise.all([
+
+      // Așteaptă sesiunea Supabase să fie gata
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUserId = session?.user?.id || null;
+
+      const [entries, profileRes, profileOwner] = await Promise.all([
         getAnimeListForUser(username),
         supabase.from('profiles').select('avatar_url, banner_url').eq('username', username).single(),
-        getCurrentProfile(),
+        currentUserId
+          ? supabase.from('profiles').select('username').eq('id', currentUserId).single()
+          : Promise.resolve({ data: null }),
       ]);
+
       setList(entries);
       setAvatarUrl(profileRes.data?.avatar_url || null);
       setBannerUrl(profileRes.data?.banner_url || null);
-      setIsOwnProfile(currentProfile?.username === username);
+      setIsOwnProfile(profileOwner.data?.username === username);
+      setIsLoggedIn(!!currentUserId);
       setLoading(false);
     }
     load();
@@ -120,14 +134,27 @@ export default function UserProfilePage() {
             {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
             <span className="hidden sm:inline">{copied ? 'Copiat!' : 'Copiază link'}</span>
           </button>
+          {!isOwnProfile && isLoggedIn && (
+            <FriendButton targetUsername={username!} />
+          )}
           {isOwnProfile && (
-            <Link to="/settings/profile"
-              className="pb-1 flex items-center gap-2 px-3 py-2 rounded-lg glass-card text-sm text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 z-10">
-              <Settings className="h-4 w-4" />
-              <span className="hidden sm:inline">Setări profil</span>
-            </Link>
+            <>
+              <button
+                onClick={() => setShowAddFriend(true)}
+                className="pb-1 flex items-center gap-2 px-3 py-2 rounded-lg glass-card text-sm text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0 z-10">
+                <UserPlus className="h-4 w-4" />
+                <span className="hidden sm:inline">Adaugă prieten</span>
+              </button>
+              <Link to="/settings/profile"
+                className="pb-1 flex items-center gap-2 px-3 py-2 rounded-lg glass-card text-sm text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 z-10">
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Setări profil</span>
+              </Link>
+            </>
           )}
         </div>
+
+        {showAddFriend && <AddFriendModal onClose={() => setShowAddFriend(false)} />}
 
         {/* Stats */}
         <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mb-6">
@@ -144,6 +171,9 @@ export default function UserProfilePage() {
             </div>
           ))}
         </div>
+
+        {/* Friends */}
+        <FriendsPanel username={username!} isOwnProfile={isOwnProfile} />
 
         {/* Tabs */}
         <div className="border-b border-border mb-6">
