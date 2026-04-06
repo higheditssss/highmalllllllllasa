@@ -1,4 +1,4 @@
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { getAnimeListForUser } from '@/lib/anime-storage';
 import { getCurrentProfile } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
