@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, List, Search, Upload, LogIn, LogOut, User } from 'lucide-react';
+import { Home, List, Search, Upload, LogIn, LogOut, User, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getCurrentProfile, logout } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -11,6 +11,7 @@ const navItems = [
   { to: '/', label: 'Acasă', icon: Home },
   { to: '/search', label: 'Caută', icon: Search },
   { to: '/list', label: 'Lista mea', icon: List },
+  { to: '/friends', label: 'Prieteni', icon: Users },
   { to: '/import', label: 'Import', icon: Upload },
 ];
 

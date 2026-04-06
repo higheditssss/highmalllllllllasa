@@ -13,6 +13,7 @@ import LoginPage from "./pages/LoginPage";
 import EmailConfirmedPage from "./pages/EmailConfirmedPage";
 import NotFound from "./pages/NotFound";
 import ProfileSettingsPage from "./pages/ProfileSettingsPage";
+import FriendsPage from "./pages/FriendsPage";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/anime/:id" element={<AnimeDetailPage />} />
           <Route path="/user/:username" element={<UserProfilePage />} />
           <Route path="/settings/profile" element={<ProfileSettingsPage />} />
+          <Route path="/friends" element={<FriendsPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/confirm" element={<EmailConfirmedPage />} />
           <Route path="*" element={<NotFound />} />
