@@ -1,9 +1,9 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getAnimeListForUser } from '@/lib/anime-storage';
 import { getCurrentProfile, uploadAvatar, uploadBanner } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { AnimeListEntry, WatchStatus, STATUS_LABELS } from '@/types/anime';
-import { Star, Tv, CheckCircle, PauseCircle, XCircle, BookOpen, Copy, Check, Camera } from 'lucide-react';
+import { Star, Tv, CheckCircle, PauseCircle, XCircle, BookOpen, Copy, Check, Camera, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
@@ -186,6 +186,13 @@ export default function UserProfilePage() {
             {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
             <span className="hidden sm:inline">{copied ? 'Copiat!' : 'Copiază link'}</span>
           </button>
+          {isOwnProfile && (
+            <Link to="/settings/profile"
+              className="pb-1 flex items-center gap-2 px-3 py-2 rounded-lg glass-card text-sm text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 z-10">
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Setări profil</span>
+            </Link>
+          )}
         </div>
 
         {/* Stats */}

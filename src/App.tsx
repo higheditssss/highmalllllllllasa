@@ -12,6 +12,7 @@ import UserProfilePage from "./pages/UserProfilePage";
 import LoginPage from "./pages/LoginPage";
 import EmailConfirmedPage from "./pages/EmailConfirmedPage";
 import NotFound from "./pages/NotFound";
+import ProfileSettingsPage from "./pages/ProfileSettingsPage";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/import" element={<ImportPage />} />
           <Route path="/anime/:id" element={<AnimeDetailPage />} />
           <Route path="/user/:username" element={<UserProfilePage />} />
+          <Route path="/settings/profile" element={<ProfileSettingsPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/confirm" element={<EmailConfirmedPage />} />
           <Route path="*" element={<NotFound />} />

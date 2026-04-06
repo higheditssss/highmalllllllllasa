@@ -73,6 +73,19 @@ export async function uploadAvatar(file: File): Promise<string | null> {
   return data.publicUrl;
 }
 
+export async function updateProfile(fields: { bio?: string }): Promise<{ success: boolean; error?: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Nu ești autentificat' };
+
+  const { error } = await supabase
+    .from('profiles')
+    .update(fields)
+    .eq('id', user.id);
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
 export async function uploadBanner(file: File): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
