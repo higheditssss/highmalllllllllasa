@@ -156,7 +156,7 @@ export default function ProfileSettingsPage() {
             <div className="relative -mt-8 mb-3 w-16 h-16">
               {/* Hat preview on avatar */}
               {activeHat && activeHat.id !== 'none' && (
-                <div className="absolute pointer-events-none z-20" style={{ top: '-28px', left: '-14px', width: '88px', height: '50px' }}>
+                <div className="absolute pointer-events-none z-20" style={{ top: '-36px', left: '-18px', width: '108px', height: '62px' }}>
                   {activeHat.preview}
                 </div>
               )}
@@ -207,7 +207,7 @@ export default function ProfileSettingsPage() {
                   {/* Avatar preview cu pălăria */}
                   <div className="relative w-14 h-14">
                     {hat.id !== 'none' && (
-                      <div className="absolute pointer-events-none z-10" style={{ top: '-22px', left: '-12px', width: '76px', height: '44px' }}>
+                      <div className="absolute pointer-events-none z-10" style={{ top: '-26px', left: '-14px', width: '88px', height: '52px' }}>
                         {hat.preview}
                       </div>
                     )}
@@ -265,22 +265,21 @@ export default function ProfileSettingsPage() {
                       <>
                         <style>{`
                           @keyframes prev-spin-${frame.id} { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-                          .prev-frame-${frame.id} { position:relative; width:100%; height:100%; border-radius:9999px; }
-                          .prev-frame-${frame.id}::before {
-                            content:''; position:absolute; inset:-3px; border-radius:inherit;
-                            background: conic-gradient(${frame.colors});
-                            animation: prev-spin-${frame.id} ${frame.speed} linear infinite; z-index:0;
-                          }
-                          .prev-frame-inner { position:relative; width:100%; height:100%; border-radius:9999px; overflow:hidden; z-index:1; }
                         `}</style>
-                        <div className={`prev-frame-${frame.id}`}>
-                          <div className="prev-frame-inner bg-secondary flex items-center justify-center">
+                        <div style={{
+                          width: '100%', height: '100%',
+                          padding: '3px',
+                          background: `conic-gradient(${frame.colors})`,
+                          animation: `prev-spin-${frame.id} ${frame.speed} linear infinite`,
+                          borderRadius: '6px',
+                        }}>
+                          <div style={{ width: '100%', height: '100%', borderRadius: '4px', overflow: 'hidden', background: 'var(--secondary, #1e1e2e)' }} className="flex items-center justify-center">
                             <span className="text-lg font-bold text-muted-foreground">{username?.charAt(0).toUpperCase() || '?'}</span>
                           </div>
                         </div>
                       </>
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-secondary ring-2 ring-border flex items-center justify-center">
+                      <div className="w-12 h-12 bg-secondary ring-2 ring-border flex items-center justify-center" style={{ borderRadius: '6px' }}>
                         <span className="text-lg font-bold text-muted-foreground">{username?.charAt(0).toUpperCase() || '?'}</span>
                       </div>
                     )}

@@ -1,7 +1,33 @@
-import React from "react";
-import { cn } from '@/lib/utils';
+import { User } from 'lucide-react';
 
-export type AvatarFrame = 'none' | 'gold' | 'fire' | 'ice' | 'galaxy' | 'nature' | 'demon';
+export type AvatarFrame = 'none' | 'gold' | 'purple' | 'blue' | 'red' | 'rainbow';
+
+export const FRAMES: { id: AvatarFrame; label: string; colors: string; speed: string; glow: string; c1: string; c2: string }[] = [
+  { id: 'none',    label: 'Niciunul', colors: '', speed: '3s', glow: '',        c1: '',        c2: '' },
+  { id: 'gold',    label: 'Auriu',    colors: '#ffd700, #ff8c00, #ffec6e, #ffd700', speed: '2.5s', glow: '#ffd700', c1: '#ffd700', c2: '#ff8c00' },
+  { id: 'purple',  label: 'Violet',   colors: '#a855f7, #6366f1, #ec4899, #a855f7', speed: '3s',   glow: '#a855f7', c1: '#a855f7', c2: '#6366f1' },
+  { id: 'blue',    label: 'Albastru', colors: '#3b82f6, #06b6d4, #22d3ee, #3b82f6', speed: '2.8s', glow: '#3b82f6', c1: '#3b82f6', c2: '#06b6d4' },
+  { id: 'red',     label: 'Roșu',     colors: '#ef4444, #f97316, #fca5a5, #ef4444', speed: '2s',   glow: '#ef4444', c1: '#ef4444', c2: '#f97316' },
+  { id: 'rainbow', label: 'Curcubeu', colors: '#ff0000, #ff7700, #ffff00, #00ff00, #0000ff, #8b00ff, #ff0000', speed: '3s', glow: '#a855f7', c1: '#ff7700', c2: '#00ff00' },
+];
+
+// Lightning bolt SVG paths (varied shapes for natural look)
+const BOLT_PATHS = [
+  'M8,0 L4,9 L7,9 L2,20 L10,8 L6,8 Z',
+  'M7,0 L3,10 L6,10 L1,22 L9,9 L5,9 Z',
+  'M6,0 L2,8 L5,8 L0,18 L8,7 L4,7 Z',
+  'M9,0 L5,11 L8,11 L3,24 L11,10 L7,10 Z',
+];
+
+// Fixed positions around the avatar (angles in degrees)
+const BOLT_POSITIONS = [
+  { angle: -45,  dist: 1.18, pathIdx: 0, delay: '0s',    dur: '1.6s' },
+  { angle: 135,  dist: 1.18, pathIdx: 1, delay: '0.55s', dur: '1.4s' },
+  { angle: 30,   dist: 1.22, pathIdx: 2, delay: '0.9s',  dur: '1.8s' },
+  { angle: 210,  dist: 1.22, pathIdx: 3, delay: '0.3s',  dur: '1.5s' },
+  { angle: -120, dist: 1.20, pathIdx: 0, delay: '1.1s',  dur: '1.7s' },
+  { angle: 80,   dist: 1.19, pathIdx: 2, delay: '0.7s',  dur: '1.3s' },
+];
 
 interface PremiumAvatarProps {
   avatarUrl: string | null;
@@ -10,113 +36,147 @@ interface PremiumAvatarProps {
   frame?: AvatarFrame;
   size?: 'sm' | 'md' | 'lg';
   rounded?: 'full' | 'xl';
-  className?: string;
 }
 
 const SIZE_MAP = {
-  sm:  { outer: 'w-10 h-10',                  badge: 'w-4 h-4 text-[8px] -bottom-1 -right-1', text: 'text-sm' },
-  md:  { outer: 'w-14 h-14',                  badge: 'w-5 h-5 text-[9px] -bottom-1 -right-1', text: 'text-lg' },
-  lg:  { outer: 'w-20 h-20 md:w-24 md:h-24',  badge: 'w-6 h-6 text-xs -bottom-1 -right-1',   text: 'text-3xl md:text-4xl' },
+  sm: { outer: 40, border: 3 },
+  md: { outer: 64, border: 4 },
+  lg: { outer: 96, border: 6 },
 };
-
-export const FRAMES: { id: AvatarFrame; label: string; colors: string; speed: string }[] = [
-  { id: 'none',   label: 'Niciunul', colors: '',                                              speed: '' },
-  { id: 'gold',   label: 'Auriu',    colors: '#ffd700, #ffec6e, #ff8c00, #ffd700',           speed: '3s' },
-  { id: 'fire',   label: 'Foc',      colors: '#ff4500, #ff6a00, #ff0000, #ff8c00, #ff4500', speed: '2s' },
-  { id: 'ice',    label: 'Gheata',   colors: '#00cfff, #a8edff, #0077ff, #00cfff',           speed: '3s' },
-  { id: 'galaxy', label: 'Galaxie',  colors: '#9400d3, #4169e1, #00ced1, #ff69b4, #9400d3', speed: '4s' },
-  { id: 'nature', label: 'Natura',   colors: '#32cd32, #7fff00, #228b22, #32cd32',           speed: '3s' },
-  { id: 'demon',  label: 'Demon',    colors: '#8b0000, #cc0000, #ff0044, #4a0000, #8b0000', speed: '2.5s' },
-];
-
-// kept for backward compat
-export function getAvatarFrameCSS(_frame: AvatarFrame, _br: string) { return ''; }
-
-function FrameWrapper({
-  frame,
-  br,
-  children,
-}: {
-  frame: AvatarFrame;
-  br: string;
-  children: React.ReactNode;
-}) {
-  const f = FRAMES.find(f => f.id === frame);
-  if (!f || f.id === 'none') return <>{children}</>;
-
-  return (
-    <>
-      <style>{`@keyframes hm-spin-${frame}{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
-      <div style={{ width: '100%', height: '100%', borderRadius: br, overflow: 'hidden' }}>
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            padding: '3px',
-            background: `conic-gradient(${f.colors})`,
-            animation: `hm-spin-${frame} ${f.speed} linear infinite`,
-          }}
-        >
-          <div style={{ width: '100%', height: '100%', borderRadius: `calc(${br} - 3px)`, overflow: 'hidden' }}>
-            {children}
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
 
 export function PremiumAvatar({
   avatarUrl,
   username,
-  isPremium = false,
   frame = 'none',
   size = 'md',
-  rounded = 'full',
-  className,
+  rounded = 'xl',
 }: PremiumAvatarProps) {
-  const s = SIZE_MAP[size];
-  const roundedClass = rounded === 'full' ? 'rounded-full' : 'rounded-xl';
-  const br = rounded === 'full' ? '9999px' : '12px';
+  const { outer, border } = SIZE_MAP[size];
+  const borderRadius = rounded === 'full' ? '50%' : size === 'lg' ? '16px' : '10px';
+  const innerRadius  = rounded === 'full' ? '50%' : size === 'lg' ? '12px' : '8px';
 
-  const avatarContent = avatarUrl ? (
-    <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
-  ) : (
-    <div className="w-full h-full flex items-center justify-center bg-secondary">
-      <span className={cn('font-bold text-muted-foreground select-none', s.text)}>
-        {username?.charAt(0).toUpperCase() || '?'}
-      </span>
-    </div>
-  );
+  const frameData = FRAMES.find(f => f.id === frame) ?? FRAMES[0];
+  const hasFrame = frame !== 'none';
 
-  const activeFrame = isPremium && frame && frame !== 'none' ? frame : null;
+  // Lightning only on md/lg, and fewer on sm
+  const bolts = hasFrame
+    ? (size === 'sm' ? BOLT_POSITIONS.slice(0, 2) : BOLT_POSITIONS)
+    : [];
 
-  if (!activeFrame) {
-    if (isPremium) {
-      return (
-        <div className={cn('relative flex-shrink-0', s.outer, className)}>
-          <FrameWrapper frame="gold" br={br}>
-            <div className={cn('w-full h-full bg-card', roundedClass)}>{avatarContent}</div>
-          </FrameWrapper>
-          <div className={cn('absolute flex items-center justify-center rounded-full z-10 bg-gradient-to-br from-yellow-400 to-orange-500 border-2 border-background shadow-md', s.badge)}>👑</div>
-        </div>
-      );
+  // Canvas size: leave room for bolts around the avatar
+  const boltRoom = size === 'lg' ? 22 : size === 'md' ? 16 : 10;
+  const canvas = outer + boltRoom * 2;
+  const center = canvas / 2;
+  const avatarR = outer / 2; // radius of avatar circle/square (approx)
+
+  const keyframes = hasFrame ? `
+    @keyframes pa-glow-${frame} {
+      0%,100% { box-shadow: 0 0 8px 3px ${frameData.glow}90, 0 0 20px 6px ${frameData.glow}45; }
+      50%      { box-shadow: 0 0 22px 8px ${frameData.glow}ee, 0 0 40px 16px ${frameData.glow}70; }
     }
-    return (
-      <div className={cn('relative flex-shrink-0', s.outer, className)}>
-        <div className={cn('w-full h-full overflow-hidden bg-card shadow-lg ring-4 ring-background', roundedClass)}>
-          {avatarContent}
-        </div>
-      </div>
-    );
-  }
+    @keyframes pa-bolt-${frame} {
+      0%,100% { opacity: 0; }
+      5%       { opacity: 0.15; }
+      10%      { opacity: 1; }
+      18%      { opacity: 0.6; }
+      25%      { opacity: 1; }
+      35%      { opacity: 0; }
+    }
+  ` : '';
 
   return (
-    <div className={cn('relative flex-shrink-0', s.outer, className)}>
-      <FrameWrapper frame={activeFrame} br={br}>
-        <div className={cn('w-full h-full bg-card', roundedClass)}>{avatarContent}</div>
-      </FrameWrapper>
-      <div className={cn('absolute flex items-center justify-center rounded-full z-10 bg-gradient-to-br from-yellow-400 to-orange-500 border-2 border-background shadow-md', s.badge)}>👑</div>
+    <div style={{ width: canvas, height: canvas, position: 'relative', flexShrink: 0, marginLeft: -boltRoom, marginTop: -boltRoom }}>
+      {hasFrame && (
+        <>
+          <style>{keyframes}</style>
+
+          {/* Lightning bolts rendered as SVG absolutely around avatar */}
+          <svg
+            width={canvas}
+            height={canvas}
+            style={{ position: 'absolute', inset: 0, zIndex: 10, pointerEvents: 'none', overflow: 'visible' }}
+          >
+            <defs>
+              <filter id={`bolt-glow-${frame}`} x="-80%" y="-80%" width="260%" height="260%">
+                <feGaussianBlur stdDeviation="2.5" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+            {bolts.map((b, i) => {
+              const rad = (b.angle * Math.PI) / 180;
+              const bx = center + Math.cos(rad) * avatarR * b.dist;
+              const by = center + Math.sin(rad) * avatarR * b.dist;
+              // rotate bolt to point outward
+              const rot = b.angle + 90;
+              const path = BOLT_PATHS[b.pathIdx];
+              return (
+                <g key={i} transform={`translate(${bx},${by}) rotate(${rot}) translate(-5,-10)`}>
+                  {/* Glow copy */}
+                  <path
+                    d={path}
+                    fill={frameData.glow}
+                    opacity={0.6}
+                    filter={`url(#bolt-glow-${frame})`}
+                    style={{ animation: `pa-bolt-${frame} ${b.dur} ${b.delay} ease-in-out infinite` }}
+                  />
+                  {/* Sharp bolt */}
+                  <path
+                    d={path}
+                    fill="white"
+                    style={{ animation: `pa-bolt-${frame} ${b.dur} ${b.delay} ease-in-out infinite` }}
+                  />
+                </g>
+              );
+            })}
+          </svg>
+
+          {/* Static gradient border + glow */}
+          <div
+            style={{
+              position: 'absolute',
+              top: boltRoom,
+              left: boltRoom,
+              width: outer,
+              height: outer,
+              borderRadius: borderRadius,
+              padding: border,
+              background: `linear-gradient(135deg, ${frameData.c1}, ${frameData.c2}, ${frameData.c1})`,
+              zIndex: 1,
+              animation: `pa-glow-${frame} 2s ease-in-out infinite`,
+            }}
+          >
+            <div style={{ width: '100%', height: '100%', borderRadius: innerRadius, background: 'var(--background, #0f0f13)' }} />
+          </div>
+        </>
+      )}
+
+      {/* Avatar image */}
+      <div
+        style={{
+          position: 'absolute',
+          top:  boltRoom + (hasFrame ? border : 0),
+          left: boltRoom + (hasFrame ? border : 0),
+          width:  outer - (hasFrame ? border * 2 : 0),
+          height: outer - (hasFrame ? border * 2 : 0),
+          borderRadius: innerRadius,
+          overflow: 'hidden',
+          zIndex: 2,
+          background: 'var(--secondary, #1e1e2e)',
+        }}
+      >
+        {avatarUrl ? (
+          <img src={avatarUrl} alt={username} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        ) : (
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: size === 'lg' ? 32 : size === 'md' ? 20 : 14, fontWeight: 700, color: 'var(--muted-foreground, #888)' }}>
+              {username?.charAt(0).toUpperCase() || <User />}
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

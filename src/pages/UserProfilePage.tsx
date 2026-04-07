@@ -16,10 +16,10 @@ const HAT_TESTERS = ['highedits', 'ovi'];
 function StrawHat({ size = 96 }: { size?: number }) {
   return (
     <div className="absolute pointer-events-none z-20" style={{
-      top: `-${size * 0.38}px`,
-      left: `${-size * 0.18}px`,
-      width: `${size * 1.35}px`,
-      height: `${size * 0.7}px`,
+      top: `-${size * 0.52}px`,
+      left: `${-size * 0.30}px`,
+      width: `${size * 1.65}px`,
+      height: `${size * 0.90}px`,
     }}>
       <img src={palariePaie} alt="Pălărie de paie" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
     </div>
@@ -123,7 +123,7 @@ export default function UserProfilePage() {
           {/* Avatar */}
           <div className="relative flex-shrink-0 z-10">
             {HAT_TESTERS.includes(username || '') && hat === 'luffy' && (
-              <StrawHat size={96} />
+              <StrawHat size={150} />
             )}
             <PremiumAvatar
               avatarUrl={avatarUrl}
