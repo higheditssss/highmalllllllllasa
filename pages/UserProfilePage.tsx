@@ -1,15 +1,32 @@
+import React from "react";
 import { useParams, Link } from 'react-router-dom';
 import { getAnimeListForUser } from '@/lib/anime-storage';
 import { getCurrentProfile } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { AnimeListEntry, WatchStatus, STATUS_LABELS } from '@/types/anime';
-import { Star, Tv, CheckCircle, PauseCircle, XCircle, BookOpen, Copy, Check, Settings, UserPlus } from 'lucide-react';
+import { Star, Tv, CheckCircle, PauseCircle, XCircle, BookOpen, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
 import { FriendButton } from '@/components/FriendButton';
 import { FriendsPanel } from '@/components/FriendsPanel';
-import { AddFriendModal } from '@/components/AddFriendModal';
+import { PremiumAvatar, type AvatarFrame } from '@/components/PremiumAvatar';
+import { AnimatedBackground, getUsernameStyle, type ProfileBg, type UsernameColor, type PremiumBadge, BADGES } from '@/components/PremiumEffects';
+import palariePaie from '@/assets/palariepaie.png';
+
+const HAT_TESTERS = ['highedits', 'ovi'];
+
+function StrawHat({ size = 96 }: { size?: number }) {
+  return (
+    <div className="absolute pointer-events-none z-20" style={{
+      top: `-${size * 0.38}px`,
+      left: `${-size * 0.18}px`,
+      width: `${size * 1.35}px`,
+      height: `${size * 0.7}px`,
+    }}>
+      <img src={palariePaie} alt="Pălărie de paie" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+    </div>
+  );
+}
 
 const STATUS_ICONS: Record<WatchStatus, React.ReactNode> = {
   watching: <Tv className="h-4 w-4" />,
@@ -30,14 +47,18 @@ const STATUS_ACCENT: Record<WatchStatus, string> = {
 export default function UserProfilePage() {
   const { username } = useParams<{ username: string }>();
   const [activeTab, setActiveTab] = useState<WatchStatus | 'all'>('all');
-  const [copied, setCopied] = useState(false);
-  const [showAddFriend, setShowAddFriend] = useState(false);
   const [list, setList] = useState<AnimeListEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
+  const [isPremium, setIsPremium] = useState(false);
+  const [hat, setHat] = useState<string>('none');
+  const [avatarFrame, setAvatarFrame] = useState<AvatarFrame>('none');
+  const [profileBg, setProfileBg] = useState<ProfileBg>('none');
+  const [usernameColor, setUsernameColor] = useState<UsernameColor>('none');
+  const [badge, setBadge] = useState<PremiumBadge>('none');
 
   useEffect(() => {
     async function load() {
@@ -50,15 +71,26 @@ export default function UserProfilePage() {
 
       const [entries, profileRes, profileOwner] = await Promise.all([
         getAnimeListForUser(username),
-        supabase.from('profiles').select('avatar_url, banner_url').eq('username', username).single(),
+        supabase.from('profiles').select('*').eq('username', username).maybeSingle(),
         currentUserId
           ? supabase.from('profiles').select('username').eq('id', currentUserId).single()
           : Promise.resolve({ data: null }),
       ]);
 
       setList(entries);
-      setAvatarUrl(profileRes.data?.avatar_url || null);
-      setBannerUrl(profileRes.data?.banner_url || null);
+      const pd = profileRes.data as any;
+      setAvatarUrl(pd?.avatar_url || null);
+      setBannerUrl(pd?.banner_url || null);
+      setHat(pd?.hat || 'none');
+      setAvatarFrame((pd?.avatar_frame as AvatarFrame) || 'none');
+      setProfileBg((pd?.profile_bg as ProfileBg) || 'none');
+      setUsernameColor((pd?.username_color as UsernameColor) || 'none');
+      setBadge((pd?.badge as PremiumBadge) || 'none');
+      // is_premium fetch separat ca să nu cadă dacă coloana nu există
+      try {
+        const { data: premiumData } = await supabase.from('profiles').select('*').eq('username', username).maybeSingle();
+        setIsPremium(premiumData?.is_premium ?? false);
+      } catch { setIsPremium(false); }
       setIsOwnProfile(profileOwner.data?.username === username);
       setIsLoggedIn(!!currentUserId);
       setLoading(false);
@@ -81,13 +113,6 @@ export default function UserProfilePage() {
     })),
   ];
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    toast.success('Link copiat!');
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   return (
     <div className="min-h-screen pb-24 md:pb-8 md:pt-16 bg-background">
 
@@ -98,6 +123,7 @@ export default function UserProfilePage() {
           : <div className="absolute inset-0 opacity-30"
               style={{ backgroundImage: 'radial-gradient(ellipse at 60% 50%, hsl(var(--primary)) 0%, transparent 70%)' }} />
         }
+        {isPremium && <AnimatedBackground type={profileBg} />}
       </div>
 
       <div className="container px-4">
@@ -106,55 +132,52 @@ export default function UserProfilePage() {
 
           {/* Avatar */}
           <div className="relative flex-shrink-0 z-10">
-            <div className="w-20 h-20 md:w-24 md:h-24 rounded-xl bg-card overflow-hidden ring-4 ring-background shadow-lg">
-              {avatarUrl
-                ? <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
-                : <div className="w-full h-full flex items-center justify-center bg-secondary">
-                    <span className="text-3xl md:text-4xl font-bold text-muted-foreground select-none">
-                      {username?.charAt(0).toUpperCase() || '?'}
-                    </span>
-                  </div>
-              }
-            </div>
+            {HAT_TESTERS.includes(username || '') && hat === 'luffy' && (
+              <StrawHat size={96} />
+            )}
+            <PremiumAvatar
+              avatarUrl={avatarUrl}
+              username={username || ''}
+              isPremium={isPremium}
+              frame={avatarFrame}
+              size="lg"
+              rounded="xl"
+            />
           </div>
 
           {/* Nume + info — pe fundal semi-transparent ca să fie vizibil peste banner */}
           <div className="flex-1 min-w-0 pb-1 z-10">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl md:text-2xl font-bold truncate drop-shadow-sm">{username}</h1>
+              <h1 className="text-xl md:text-2xl font-bold truncate drop-shadow-sm" style={isPremium ? getUsernameStyle(usernameColor) : {}}>{username}</h1>
+              {isPremium && badge !== 'none' && (
+                <span className="text-lg leading-none" title={BADGES.find(b => b.id === badge)?.label}>
+                  {BADGES.find(b => b.id === badge)?.render}
+                </span>
+              )}
+              {isPremium && (
+                <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full"
+                  style={{ background: 'linear-gradient(135deg, #ffd700, #ff8c00)', color: '#1a0a00' }}>
+                  👑 Premium
+                </span>
+              )}
               {isOwnProfile && (
-                <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full"></span>
+                <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full">Tu</span>
               )}
             </div>
             <p className="text-sm text-muted-foreground mt-0.5"></p>
           </div>
 
-          <button onClick={handleCopyLink}
-            className="pb-1 flex items-center gap-2 px-3 py-2 rounded-lg glass-card text-sm text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 z-10">
-            {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
-            <span className="hidden sm:inline">{copied ? 'Copiat!' : 'Copiază link'}</span>
-          </button>
           {!isOwnProfile && isLoggedIn && (
             <FriendButton targetUsername={username!} />
           )}
           {isOwnProfile && (
-            <>
-              <button
-                onClick={() => setShowAddFriend(true)}
-                className="pb-1 flex items-center gap-2 px-3 py-2 rounded-lg glass-card text-sm text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0 z-10">
-                <UserPlus className="h-4 w-4" />
-                <span className="hidden sm:inline">Adaugă prieten</span>
-              </button>
-              <Link to="/settings/profile"
-                className="pb-1 flex items-center gap-2 px-3 py-2 rounded-lg glass-card text-sm text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 z-10">
-                <Settings className="h-4 w-4" />
-                <span className="hidden sm:inline">Setări profil</span>
-              </Link>
-            </>
+            <Link to="/settings/profile"
+              className="pb-1 flex items-center gap-2 px-3 py-2 rounded-lg glass-card text-sm text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 z-10">
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Setări profil</span>
+            </Link>
           )}
         </div>
-
-        {showAddFriend && <AddFriendModal onClose={() => setShowAddFriend(false)} />}
 
         {/* Stats */}
         <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mb-6">
