@@ -1,3 +1,4 @@
+import React from "react";
 import { cn } from '@/lib/utils';
 
 export type AvatarFrame = 'none' | 'gold' | 'fire' | 'ice' | 'galaxy' | 'nature' | 'demon';
@@ -13,9 +14,9 @@ interface PremiumAvatarProps {
 }
 
 const SIZE_MAP = {
-  sm:  { outer: 'w-10 h-10',                 badge: 'w-4 h-4 text-[8px] -bottom-1 -right-1', text: 'text-sm' },
-  md:  { outer: 'w-14 h-14',                 badge: 'w-5 h-5 text-[9px] -bottom-1 -right-1', text: 'text-lg' },
-  lg:  { outer: 'w-20 h-20 md:w-24 md:h-24', badge: 'w-6 h-6 text-xs -bottom-1 -right-1',   text: 'text-3xl md:text-4xl' },
+  sm:  { outer: 'w-10 h-10',                  badge: 'w-4 h-4 text-[8px] -bottom-1 -right-1', text: 'text-sm' },
+  md:  { outer: 'w-14 h-14',                  badge: 'w-5 h-5 text-[9px] -bottom-1 -right-1', text: 'text-lg' },
+  lg:  { outer: 'w-20 h-20 md:w-24 md:h-24',  badge: 'w-6 h-6 text-xs -bottom-1 -right-1',   text: 'text-3xl md:text-4xl' },
 };
 
 export const FRAMES: { id: AvatarFrame; label: string; colors: string; speed: string }[] = [
@@ -28,19 +29,41 @@ export const FRAMES: { id: AvatarFrame; label: string; colors: string; speed: st
   { id: 'demon',  label: 'Demon',    colors: '#8b0000, #cc0000, #ff0044, #4a0000, #8b0000', speed: '2.5s' },
 ];
 
-function getFrameCSS(frame: AvatarFrame, br: string) {
+// kept for backward compat
+export function getAvatarFrameCSS(_frame: AvatarFrame, _br: string) { return ''; }
+
+function FrameWrapper({
+  frame,
+  br,
+  children,
+}: {
+  frame: AvatarFrame;
+  br: string;
+  children: React.ReactNode;
+}) {
   const f = FRAMES.find(f => f.id === frame);
-  if (!f || f.id === 'none') return '';
-  return `
-    @keyframes hm-spin-${frame} { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-    .hm-f-${frame} { position:relative; width:100%; height:100%; border-radius:${br}; }
-    .hm-f-${frame}::before {
-      content:''; position:absolute; inset:-3px; border-radius:${br};
-      background:conic-gradient(${f.colors});
-      animation:hm-spin-${frame} ${f.speed} linear infinite; z-index:0;
-    }
-    .hm-fi-${frame} { position:relative; width:100%; height:100%; overflow:hidden; border-radius:${br}; z-index:1; }
-  `;
+  if (!f || f.id === 'none') return <>{children}</>;
+
+  return (
+    <>
+      <style>{`@keyframes hm-spin-${frame}{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      <div style={{ width: '100%', height: '100%', borderRadius: br, overflow: 'hidden' }}>
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            padding: '3px',
+            background: `conic-gradient(${f.colors})`,
+            animation: `hm-spin-${frame} ${f.speed} linear infinite`,
+          }}
+        >
+          <div style={{ width: '100%', height: '100%', borderRadius: `calc(${br} - 3px)`, overflow: 'hidden' }}>
+            {children}
+          </div>
+        </div>
+      </div>
+    </>
+  );
 }
 
 export function PremiumAvatar({
@@ -72,10 +95,9 @@ export function PremiumAvatar({
     if (isPremium) {
       return (
         <div className={cn('relative flex-shrink-0', s.outer, className)}>
-          <style>{getFrameCSS('gold', br)}</style>
-          <div className="hm-f-gold">
-            <div className="hm-fi-gold bg-card">{avatarContent}</div>
-          </div>
+          <FrameWrapper frame="gold" br={br}>
+            <div className={cn('w-full h-full bg-card', roundedClass)}>{avatarContent}</div>
+          </FrameWrapper>
           <div className={cn('absolute flex items-center justify-center rounded-full z-10 bg-gradient-to-br from-yellow-400 to-orange-500 border-2 border-background shadow-md', s.badge)}>👑</div>
         </div>
       );
@@ -91,10 +113,9 @@ export function PremiumAvatar({
 
   return (
     <div className={cn('relative flex-shrink-0', s.outer, className)}>
-      <style>{getFrameCSS(activeFrame, br)}</style>
-      <div className={`hm-f-${activeFrame}`}>
-        <div className={`hm-fi-${activeFrame} bg-card`}>{avatarContent}</div>
-      </div>
+      <FrameWrapper frame={activeFrame} br={br}>
+        <div className={cn('w-full h-full bg-card', roundedClass)}>{avatarContent}</div>
+      </FrameWrapper>
       <div className={cn('absolute flex items-center justify-center rounded-full z-10 bg-gradient-to-br from-yellow-400 to-orange-500 border-2 border-background shadow-md', s.badge)}>👑</div>
     </div>
   );

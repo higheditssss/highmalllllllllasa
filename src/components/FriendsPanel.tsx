@@ -4,6 +4,7 @@ import { Users, UserCheck, UserX } from 'lucide-react';
 import { getFriendsForUser, getPendingRequests, acceptFriendRequest, removeFriendship, FriendProfile } from '@/lib/friends';
 import { toast } from 'sonner';
 import { PremiumAvatar } from '@/components/PremiumAvatar';
+import { FriendCardGlow } from '@/components/PremiumEffects';
 
 interface FriendsPanelProps {
   username: string;
@@ -103,19 +104,20 @@ export function FriendsPanel({ username, isOwnProfile }: FriendsPanelProps) {
       ) : (
         <div className="flex flex-wrap gap-3">
           {friends.map(friend => (
-            <Link key={friend.id} to={`/user/${friend.username}`}
-              className="flex flex-col items-center gap-1 group">
-              <PremiumAvatar
-                avatarUrl={friend.avatar_url || null}
-                username={friend.username}
-                isPremium={(friend as any).is_premium ?? false}
-                size="sm"
-                rounded="full"
-              />
-              <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors max-w-[60px] truncate">
-                {friend.username}
-              </span>
-            </Link>
+            <FriendCardGlow key={friend.id} isPremium={(friend as any).is_premium ?? false} className="flex flex-col items-center gap-1 group">
+              <Link to={`/user/${friend.username}`} className="flex flex-col items-center gap-1">
+                <PremiumAvatar
+                  avatarUrl={friend.avatar_url || null}
+                  username={friend.username}
+                  isPremium={(friend as any).is_premium ?? false}
+                  size="sm"
+                  rounded="full"
+                />
+                <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors max-w-[60px] truncate">
+                  {friend.username}
+                </span>
+              </Link>
+            </FriendCardGlow>
           ))}
         </div>
       )}
