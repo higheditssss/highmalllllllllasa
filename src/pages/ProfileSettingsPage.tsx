@@ -5,8 +5,6 @@ import { Camera, User, Image, Save, ArrowLeft, Info, Sparkles } from 'lucide-rea
 import { toast } from 'sonner';
 import palariePaie from '@/assets/palariepaie.png';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/lib/supabase';
-import { FRAMES, type AvatarFrame } from '@/components/PremiumAvatar';
 
 const AVATAR_MAX_MB = 2;
 const BANNER_MAX_MB = 5;
@@ -42,7 +40,6 @@ export default function ProfileSettingsPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [selectedHat, setSelectedHat] = useState<string>('none');
-  const [selectedFrame, setSelectedFrame] = useState<AvatarFrame>('none');
   const [isPremium, setIsPremium] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
@@ -61,7 +58,6 @@ export default function ProfileSettingsPage() {
       setAvatarUrl(profile.avatar_url || null);
       setBannerUrl(profile.banner_url || null);
       setSelectedHat(profile.hat || 'none');
-      setSelectedFrame((profile.avatar_frame as AvatarFrame) || 'none');
       setIsPremium(profile.is_premium === true);
       setLoading(false);
     }
@@ -103,7 +99,7 @@ export default function ProfileSettingsPage() {
       else toast.error('Eroare la upload banner');
     }
 
-    const result = await updateProfile({ bio, hat: selectedHat, avatar_frame: selectedFrame } as any);
+    const result = await updateProfile({ bio, hat: selectedHat } as any);
     if (result.success) toast.success('Profilul a fost salvat!');
     else toast.error(result.error || 'Eroare la salvare');
 
@@ -234,69 +230,6 @@ export default function ProfileSettingsPage() {
           </div>
         )}
 
-        {/* Frame-uri avatar — doar pentru Premium */}
-        {(isPremium || isHatTester) && (
-          <div className="glass-card rounded-2xl p-5 mb-4">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-primary"><Sparkles className="h-4 w-4" /></span>
-              <h2 className="text-sm font-semibold">Frame avatar</h2>
-              <span className="ml-auto text-xs px-2 py-0.5 rounded-full font-semibold"
-                style={{ background: 'linear-gradient(135deg,#ffd700,#ff8c00)', color: '#1a0a00' }}>
-                👑 Premium
-              </span>
-            </div>
-
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
-              {FRAMES.map(frame => (
-                <button
-                  key={frame.id}
-                  onClick={() => setSelectedFrame(frame.id)}
-                  className={cn(
-                    'flex-shrink-0 flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all',
-                    selectedFrame === frame.id
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border bg-secondary/50 hover:border-primary/50'
-                  )}
-                  style={{ minWidth: '80px' }}
-                >
-                  {/* Preview frame */}
-                  <div className="relative w-12 h-12">
-                    {frame.id !== 'none' ? (
-                      <>
-                        <style>{`
-                          @keyframes prev-spin-${frame.id} { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-                        `}</style>
-                        <div style={{
-                          width: '100%', height: '100%',
-                          padding: '3px',
-                          background: `conic-gradient(${frame.colors})`,
-                          animation: `prev-spin-${frame.id} ${frame.speed} linear infinite`,
-                          borderRadius: '6px',
-                        }}>
-                          <div style={{ width: '100%', height: '100%', borderRadius: '4px', overflow: 'hidden', background: 'var(--secondary, #1e1e2e)' }} className="flex items-center justify-center">
-                            <span className="text-lg font-bold text-muted-foreground">{username?.charAt(0).toUpperCase() || '?'}</span>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="w-12 h-12 bg-secondary ring-2 ring-border flex items-center justify-center" style={{ borderRadius: '6px' }}>
-                        <span className="text-lg font-bold text-muted-foreground">{username?.charAt(0).toUpperCase() || '?'}</span>
-                      </div>
-                    )}
-                  </div>
-                  <span className="text-xs font-medium text-center leading-tight">{frame.label}</span>
-                  {selectedFrame === frame.id && (
-                    <span className="w-2 h-2 rounded-full bg-primary block" />
-                  )}
-                </button>
-              ))}
-            </div>
-
-            <p className="text-xs text-muted-foreground mt-3">
-              Frame-ul apare ca border animat în jurul avatarului tău pe profil.
-            </p>
-          </div>
-        )}
 
         {/* Poză de profil */}
         <Section icon={<User className="h-4 w-4" />} title="Poză de profil">

@@ -73,7 +73,7 @@ export async function uploadAvatar(file: File): Promise<string | null> {
   return data.publicUrl;
 }
 
-export async function updateProfile(fields: { bio?: string; hat?: string; avatar_frame?: string }): Promise<{ success: boolean; error?: string }> {
+export async function updateProfile(fields: { bio?: string; hat?: string }): Promise<{ success: boolean; error?: string }> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Nu ești autentificat' };
 

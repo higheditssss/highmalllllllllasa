@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { FriendButton } from '@/components/FriendButton';
 import { FriendsPanel } from '@/components/FriendsPanel';
-import { PremiumAvatar, type AvatarFrame } from '@/components/PremiumAvatar';
+import { PremiumAvatar } from '@/components/PremiumAvatar';
 import palariePaie from '@/assets/palariepaie.png';
 
 const HAT_TESTERS = ['highedits', 'ovi'];
@@ -53,7 +53,6 @@ export default function UserProfilePage() {
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [isPremium, setIsPremium] = useState(false);
   const [hat, setHat] = useState<string>('none');
-  const [avatarFrame, setAvatarFrame] = useState<AvatarFrame>('none');
 
   useEffect(() => {
     async function load() {
@@ -66,7 +65,7 @@ export default function UserProfilePage() {
 
       const [entries, profileRes, profileOwner] = await Promise.all([
         getAnimeListForUser(username),
-        supabase.from('profiles').select('avatar_url, banner_url, hat, avatar_frame').eq('username', username).maybeSingle(),
+        supabase.from('profiles').select('avatar_url, banner_url, hat').eq('username', username).maybeSingle(),
         currentUserId
           ? supabase.from('profiles').select('username').eq('id', currentUserId).single()
           : Promise.resolve({ data: null }),
@@ -76,7 +75,6 @@ export default function UserProfilePage() {
       setAvatarUrl(profileRes.data?.avatar_url || null);
       setBannerUrl(profileRes.data?.banner_url || null);
       setHat(profileRes.data?.hat || 'none');
-      setAvatarFrame((profileRes.data?.avatar_frame as AvatarFrame) || 'none');
       // is_premium fetch separat ca să nu cadă dacă coloana nu există
       try {
         const { data: premiumData } = await supabase.from('profiles').select('is_premium').eq('username', username).maybeSingle();
@@ -129,7 +127,6 @@ export default function UserProfilePage() {
               avatarUrl={avatarUrl}
               username={username || ''}
               isPremium={isPremium}
-              frame={avatarFrame}
               size="lg"
               rounded="xl"
             />
